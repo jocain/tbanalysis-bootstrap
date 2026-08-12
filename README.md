@@ -19,6 +19,24 @@ Activate it (`source venv/bin/activate`) before running any script by hand.
 Condor jobs (`condor/executable_*.sh`) source it automatically through
 `$WORK_DIR/venv/bin/activate`, so nothing else needs to be exported.
 
+## Where to find the data
+
+The information of the runs is readable here:
+https://docs.google.com/spreadsheets/d/1w6pS6lZz4-O64_hRyXVw39TIuSdXgg53iQ-6rJqU-RE/edit?gid=1892259458#gid=1892259458
+
+The raw data is aligned with the bcid and, in the case of the data with more than one ETROC, global coordinates are used mapping the 4 16x16 grids to a single one of 32x32. Available output (processed in the 904 computer) is available here:
+
+```
+/eos/user/f/fernance/ETL/Bootstrap/July2026/Data/
+```
+
+For some results to play with, you can check:
+```
+/eos/user/f/fernance/ETL/Bootstrap/July2026/Results
+```
+
+Reading permission to this folder is on demand and to the people doing the analysis.
+
 ## Pipeline
 
 1. **Preselection** — `do_bootstrap_preselection.py` (via `condor/launch_preselection.sh`
