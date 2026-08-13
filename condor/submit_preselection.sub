@@ -1,0 +1,27 @@
+executable   = $ENV(WORK_DIR)/condor/executable_preselection.sh
+arguments    = $(run_start) $(run_stop) $(trigger) $(doglobal)
+output       = $ENV(WORK_DIR)/condor/logs/job_$ENV(TAG)_$(ClusterId).$(ProcId).out
+error        = $ENV(WORK_DIR)/condor/logs/job_$ENV(TAG)_$(ClusterId).$(ProcId).err
+log          = $ENV(WORK_DIR)/condor/logs/job_$ENV(TAG)_$(ClusterId).$(ProcId).log
++JobFlavour  = "tomorrow"
+
+getenv = True
+should_transfer_files = YES
+when_to_transfer_output = ON_EXIT
+transfer_input_files = $ENV(X509_USER_PROXY)
+x509userproxy=$ENV(X509_USER_PROXY)
+use_x509userproxy = True
+JobBatchName = "$ENV(TAG)"
+
+# Add "--doGlobal" as a 4th field to run that job with row_global/col_global
+# (range 0..32) instead of row/col. Leave the field empty/absent for the
+# default row/col (range 0..16) behavior.
+queue run_start,run_stop,trigger,doglobal from (
+#147124 147487 2
+#147488 147565 2
+#147566 147641 2
+#147644 147885 2
+#147886 147966 2
+#147967 148053 2
+148162 148408 2 --doGlobal
+)

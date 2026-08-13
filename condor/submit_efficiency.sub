@@ -1,0 +1,32 @@
+executable   = $ENV(WORK_DIR)/condor/executable_efficiency.sh
+arguments    = $(run_start) $(run_stop) $(trigger) $(eff_layer) $(outdir)
+output       = $ENV(WORK_DIR)/condor/logs/job_$ENV(TAG)_$(ClusterId).$(ProcId).out
+error        = $ENV(WORK_DIR)/condor/logs/job_$ENV(TAG)_$(ClusterId).$(ProcId).err
+log          = $ENV(WORK_DIR)/condor/logs/job_$ENV(TAG)_$(ClusterId).$(ProcId).log
++JobFlavour  = "tomorrow"
+
+getenv = True
+should_transfer_files = YES
+when_to_transfer_output = ON_EXIT
+transfer_input_files = $ENV(X509_USER_PROXY)
+x509userproxy=$ENV(X509_USER_PROXY)
+use_x509userproxy = True
+JobBatchName = "$ENV(TAG)"
+
+queue run_start,run_stop,trigger,eff_layer,outdir from (
+135958 136884 2 1 /eos/user/f/fernance/ETL/Bootstrap/April2026/Efficiency_135958_136884
+136889 137034 2 1 /eos/user/f/fernance/ETL/Bootstrap/April2026/Efficiency_136889_137034
+137035 137056 2 1 /eos/user/f/fernance/ETL/Bootstrap/April2026/Efficiency_137035_137056
+137065 137160 2 1 /eos/user/f/fernance/ETL/Bootstrap/April2026/Efficiency_137065_137160
+137166 138055 2 1 /eos/user/f/fernance/ETL/Bootstrap/April2026/Efficiency_137166_138055
+138084 138483 2 1 /eos/user/f/fernance/ETL/Bootstrap/April2026/Efficiency_138084_138483
+138484 138794 0 1 /eos/user/f/fernance/ETL/Bootstrap/April2026/Efficiency_138484_138794
+138795 139758 0 1 /eos/user/f/fernance/ETL/Bootstrap/April2026/Efficiency_138795_139758
+139759 140130 0 1 /eos/user/f/fernance/ETL/Bootstrap/April2026/Efficiency_139759_140130
+140131 140391 0 1 /eos/user/f/fernance/ETL/Bootstrap/April2026/Efficiency_140131_140391
+140392 140999 0 1 /eos/user/f/fernance/ETL/Bootstrap/April2026/Efficiency_140392_140999
+141000 141816 0 1 /eos/user/f/fernance/ETL/Bootstrap/April2026/Efficiency_141000_141816
+141817 142144 0 1 /eos/user/f/fernance/ETL/Bootstrap/April2026/Efficiency_141817_142144
+142177 142233 0 1 /eos/user/f/fernance/ETL/Bootstrap/April2026/Efficiency_142177_142233
+142234 142371 0 1 /eos/user/f/fernance/ETL/Bootstrap/April2026/Efficiency_142234_142371
+)
