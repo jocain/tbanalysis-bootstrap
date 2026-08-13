@@ -18,17 +18,6 @@ JobBatchName = "$ENV(TAG)"
 # do_bootstrap_preselection.py's --doGlobal (row_global/col_global, range
 # 0..32). Leave the field empty/absent for the default row/col behavior.
 queue input_dir,output_dir,trigger,doglobal from (
-#/eos/user/f/fernance/ETL/Bootstrap/July2026/Test-bootstrap_147124_147487_target-trigger-2_OPTSEL/  /eos/user/f/fernance/ETL/Bootstrap/July2026/Results/ResultsTWCUpdated_v2_147124_147487  k
-#/eos/user/f/fernance/ETL/Bootstrap/July2026/Test-bootstrap_147488_147565_target-trigger-2_OPTSEL/  /eos/user/f/fernance/ETL/Bootstrap/July2026/Results/ResultsTWCUpdated_v2_147488_147565  k
-#/eos/user/f/fernance/ETL/Bootstrap/July2026/Test-bootstrap_147644_147885_target-trigger-2_OPTSEL/  /eos/user/f/fernance/ETL/Bootstrap/July2026/Results/ResultsTWCUpdated_v2_147644_147885  k
-#/eos/user/f/fernance/ETL/Bootstrap/July2026/Test-bootstrap_147566_147641_target-trigger-2_OPTSEL/  /eos/user/f/fernance/ETL/Bootstrap/July2026/Results/ResultsTWCUpdated_v2_147566_147641  k
-#/eos/user/f/fernance/ETL/Bootstrap/July2026/Test-bootstrap_147967_148053_target-trigger-2_OPTSEL/  /eos/user/f/fernance/ETL/Bootstrap/July2026/Results/ResultsTWCUpdated_v2_147967_148053  k
-#/eos/user/f/fernance/ETL/Bootstrap/July2026/Test-bootstrap_147886_147966_target-trigger-2_OPTSEL/  /eos/user/f/fernance/ETL/Bootstrap/July2026/Results/ResultsTWCUpdated_v2_147886_147966  k
-#/eos/user/f/fernance/ETL/Bootstrap/July2026/Test-bootstrap_148162_148408_target-trigger-2_OPTSEL/  /eos/user/f/fernance/ETL/Bootstrap/July2026/Results/ResultsTWCUpdated_v2_148162_148408  k  --doGlobal
-#
-#/eos/user/f/fernance/ETL/Bootstrap/July2026/Test-bootstrap_149280_149350_target-trigger-2_OPTSEL/  /eos/user/f/fernance/ETL/Bootstrap/July2026/Results/ResultsTWCUpdated_v2_149280_149350  k
-#/eos/user/f/fernance/ETL/Bootstrap/July2026/Test-bootstrap_149585_149634_target-trigger-2_OPTSEL/  /eos/user/f/fernance/ETL/Bootstrap/July2026/Results/ResultsTWCUpdated_v2_149585_149634  k
-#/eos/user/f/fernance/ETL/Bootstrap/July2026/Test-bootstrap_148847_148926_target-trigger-2_OPTSEL/  /eos/user/f/fernance/ETL/Bootstrap/July2026/Results/ResultsTWCUpdated_v2_148847_148926  k  --doGlobal
-/eos/user/f/fernance/ETL/Bootstrap/July2026/Test-bootstrap_149132_149203_target-trigger-2_OPTSEL/  /eos/user/f/fernance/ETL/Bootstrap/July2026/Results/ResultsTWCUpdated_v2_149132_149203  k  --doGlobal
-/eos/user/f/fernance/ETL/Bootstrap/July2026/Test-bootstrap_149204_149279_target-trigger-2_OPTSEL/  /eos/user/f/fernance/ETL/Bootstrap/July2026/Results/ResultsTWCUpdated_v2_149204_149279  k  --doGlobal
+#/eos/user/r/rovitale/repos/tbanalysis-bootstrap/processing/Test-bootstrap_{run_start}_{run_stop}_target-{target}_OPTSEL  /eos/user/r/rovitale/repos/tbanalysis-bootstrap/processing/results_{run_start}_{run_stop}  k  --doGlobal
+/eos/user/r/rovitale/repos/tbanalysis-bootstrap/processing/Test-bootstrap_147644_147885_target-2_OPTSEL  /eos/user/r/rovitale/repos/tbanalysis-bootstrap/processing/results_147644_147885  k
 )

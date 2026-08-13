@@ -15,40 +15,11 @@ JobBatchName = "$ENV(TAG)"
 
 # One line per (input_dir, output_dir) x {ij, jk, ki} -> 3 jobs per directory
 queue input_dir,output_dir,pair from (
-#/eos/user/f/fernance/ETL/Bootstrap/July2026/Results/ResultsTWCUpdated_v2_147124_147487/step1  /eos/user/f/fernance/ETL/Bootstrap/July2026/Results/ResultsTWCUpdated_v2_147124_147487/step2  ij
-#/eos/user/f/fernance/ETL/Bootstrap/July2026/Results/ResultsTWCUpdated_v2_147124_147487/step1  /eos/user/f/fernance/ETL/Bootstrap/July2026/Results/ResultsTWCUpdated_v2_147124_147487/step2  jk
-#/eos/user/f/fernance/ETL/Bootstrap/July2026/Results/ResultsTWCUpdated_v2_147124_147487/step1  /eos/user/f/fernance/ETL/Bootstrap/July2026/Results/ResultsTWCUpdated_v2_147124_147487/step2  ki
-##
-#/eos/user/f/fernance/ETL/Bootstrap/July2026/Results/ResultsTWCUpdated_v2_147488_147565/step1  /eos/user/f/fernance/ETL/Bootstrap/July2026/Results/ResultsTWCUpdated_v2_147488_147565/step2  ij
-#/eos/user/f/fernance/ETL/Bootstrap/July2026/Results/ResultsTWCUpdated_v2_147488_147565/step1  /eos/user/f/fernance/ETL/Bootstrap/July2026/Results/ResultsTWCUpdated_v2_147488_147565/step2  jk
-#/eos/user/f/fernance/ETL/Bootstrap/July2026/Results/ResultsTWCUpdated_v2_147488_147565/step1  /eos/user/f/fernance/ETL/Bootstrap/July2026/Results/ResultsTWCUpdated_v2_147488_147565/step2  ki
-##
-#/eos/user/f/fernance/ETL/Bootstrap/July2026/Results/ResultsTWCUpdated_v2_147644_147885/step1  /eos/user/f/fernance/ETL/Bootstrap/July2026/Results/ResultsTWCUpdated_v2_147644_147885/step2  ij
-#/eos/user/f/fernance/ETL/Bootstrap/July2026/Results/ResultsTWCUpdated_v2_147644_147885/step1  /eos/user/f/fernance/ETL/Bootstrap/July2026/Results/ResultsTWCUpdated_v2_147644_147885/step2  jk
-#/eos/user/f/fernance/ETL/Bootstrap/July2026/Results/ResultsTWCUpdated_v2_147644_147885/step1  /eos/user/f/fernance/ETL/Bootstrap/July2026/Results/ResultsTWCUpdated_v2_147644_147885/step2  ki
-##
-#/eos/user/f/fernance/ETL/Bootstrap/July2026/Results/ResultsTWCUpdated_v2_147967_148053/step1  /eos/user/f/fernance/ETL/Bootstrap/July2026/Results/ResultsTWCUpdated_v2_147967_148053/step2  ij
-#/eos/user/f/fernance/ETL/Bootstrap/July2026/Results/ResultsTWCUpdated_v2_147967_148053/step1  /eos/user/f/fernance/ETL/Bootstrap/July2026/Results/ResultsTWCUpdated_v2_147967_148053/step2  jk
-#/eos/user/f/fernance/ETL/Bootstrap/July2026/Results/ResultsTWCUpdated_v2_147967_148053/step1  /eos/user/f/fernance/ETL/Bootstrap/July2026/Results/ResultsTWCUpdated_v2_147967_148053/step2  ki
-##
-#/eos/user/f/fernance/ETL/Bootstrap/July2026/Results/ResultsTWCUpdated_v2_147566_147641/step1  /eos/user/f/fernance/ETL/Bootstrap/July2026/Results/ResultsTWCUpdated_v2_147566_147641/step2  ij
-#/eos/user/f/fernance/ETL/Bootstrap/July2026/Results/ResultsTWCUpdated_v2_147566_147641/step1  /eos/user/f/fernance/ETL/Bootstrap/July2026/Results/ResultsTWCUpdated_v2_147566_147641/step2  jk
-#/eos/user/f/fernance/ETL/Bootstrap/July2026/Results/ResultsTWCUpdated_v2_147566_147641/step1  /eos/user/f/fernance/ETL/Bootstrap/July2026/Results/ResultsTWCUpdated_v2_147566_147641/step2  ki
-##
-#/eos/user/f/fernance/ETL/Bootstrap/July2026/Results/ResultsTWCUpdated_v2_147886_147966/step1  /eos/user/f/fernance/ETL/Bootstrap/July2026/Results/ResultsTWCUpdated_v2_147886_147966/step2  ij
-#/eos/user/f/fernance/ETL/Bootstrap/July2026/Results/ResultsTWCUpdated_v2_147886_147966/step1  /eos/user/f/fernance/ETL/Bootstrap/July2026/Results/ResultsTWCUpdated_v2_147886_147966/step2  jk
-#/eos/user/f/fernance/ETL/Bootstrap/July2026/Results/ResultsTWCUpdated_v2_147886_147966/step1  /eos/user/f/fernance/ETL/Bootstrap/July2026/Results/ResultsTWCUpdated_v2_147886_147966/step2  ki
-##
-#/eos/user/f/fernance/ETL/Bootstrap/July2026/Results/ResultsTWCUpdated_v2_149280_149350/step1  /eos/user/f/fernance/ETL/Bootstrap/July2026/Results/ResultsTWCUpdated_v2_149280_149350/step2  ij
-#/eos/user/f/fernance/ETL/Bootstrap/July2026/Results/ResultsTWCUpdated_v2_149280_149350/step1  /eos/user/f/fernance/ETL/Bootstrap/July2026/Results/ResultsTWCUpdated_v2_149280_149350/step2  jk
-#/eos/user/f/fernance/ETL/Bootstrap/July2026/Results/ResultsTWCUpdated_v2_149280_149350/step1  /eos/user/f/fernance/ETL/Bootstrap/July2026/Results/ResultsTWCUpdated_v2_149280_149350/step2  ki
-##
-#/eos/user/f/fernance/ETL/Bootstrap/July2026/Results/ResultsTWCUpdated_v2_149585_149634/step1  /eos/user/f/fernance/ETL/Bootstrap/July2026/Results/ResultsTWCUpdated_v2_149585_149634/step2  ij
-#/eos/user/f/fernance/ETL/Bootstrap/July2026/Results/ResultsTWCUpdated_v2_149585_149634/step1  /eos/user/f/fernance/ETL/Bootstrap/July2026/Results/ResultsTWCUpdated_v2_149585_149634/step2  jk
-#/eos/user/f/fernance/ETL/Bootstrap/July2026/Results/ResultsTWCUpdated_v2_149585_149634/step1  /eos/user/f/fernance/ETL/Bootstrap/July2026/Results/ResultsTWCUpdated_v2_149585_149634/step2  ki
-##
-/eos/user/f/fernance/ETL/Bootstrap/July2026/Results/ResultsTWCUpdated_v2_148847_148926/step1  /eos/user/f/fernance/ETL/Bootstrap/July2026/Results/ResultsTWCUpdated_v2_148847_148926/step2  ij
-/eos/user/f/fernance/ETL/Bootstrap/July2026/Results/ResultsTWCUpdated_v2_148847_148926/step1  /eos/user/f/fernance/ETL/Bootstrap/July2026/Results/ResultsTWCUpdated_v2_148847_148926/step2  jk
-/eos/user/f/fernance/ETL/Bootstrap/July2026/Results/ResultsTWCUpdated_v2_148847_148926/step1  /eos/user/f/fernance/ETL/Bootstrap/July2026/Results/ResultsTWCUpdated_v2_148847_148926/step2  ki
-##
+#/eos/user/r/rovitale/repos/tbanalysis-bootstrap/processing/results_{run_start}_{run_stop}/step1  /eos/user/r/rovitale/repos/tbanalysis-bootstrap/processing/results_{run_start}_{run_stop}/step2  ij
+#/eos/user/r/rovitale/repos/tbanalysis-bootstrap/processing/results_{run_start}_{run_stop}/step1  /eos/user/r/rovitale/repos/tbanalysis-bootstrap/processing/results_{run_start}_{run_stop}/step2  jk
+#/eos/user/r/rovitale/repos/tbanalysis-bootstrap/processing/results_{run_start}_{run_stop}/step1  /eos/user/r/rovitale/repos/tbanalysis-bootstrap/processing/results_{run_start}_{run_stop}/step2  ki
+###
+/eos/user/r/rovitale/repos/tbanalysis-bootstrap/processing/results_147644_147885/step1  /eos/user/r/rovitale/repos/tbanalysis-bootstrap/processing/results_147644_147885/step2  ij
+/eos/user/r/rovitale/repos/tbanalysis-bootstrap/processing/results_147644_147885/step1  /eos/user/r/rovitale/repos/tbanalysis-bootstrap/processing/results_147644_147885/step2  jk
+/eos/user/r/rovitale/repos/tbanalysis-bootstrap/processing/results_147644_147885/step1  /eos/user/r/rovitale/repos/tbanalysis-bootstrap/processing/results_147644_147885/step2  ki
 )

@@ -658,7 +658,7 @@ def main():
     run_stop = int(argv[1]) # 133181
     trigger = int(argv[2]) # 0
     target = f"trigger-{trigger}"
-    output_dir = f"/eos/user/f/fernance/ETL/Bootstrap/July2026/Test-bootstrap_{run_start}_{run_stop}_target-{target}_OPTSEL"
+    output_dir = f"/eos/user/r/rovitale/repos/tbanalysis-bootstrap/processing/Test-bootstrap_{run_start}_{run_stop}_target-{target}_OPTSEL"
 
     ### Selection options
     do1HitUniform = False
