@@ -1,0 +1,4 @@
+processing/*
+venv/*
+condor/logs/*
+setup.sh

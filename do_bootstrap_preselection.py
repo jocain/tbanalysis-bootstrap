@@ -712,7 +712,7 @@ def main():
         preselect_and_save_single(
             run_files,
             output_dir,
-            step_size=500000,
+            step_size=100000,
             concat_every=10,
             do1HitUniform=do1HitUniform,
             trigger=trigger

@@ -2,9 +2,9 @@ executable   = $ENV(WORK_DIR)/condor/executable_step1.sh
 arguments    = $(input_dir) $(output_dir) $(trigger) $(doglobal)
 output       = $ENV(WORK_DIR)/condor/logs/job_$ENV(TAG)_$(ClusterId).$(ProcId).out
 error        = $ENV(WORK_DIR)/condor/logs/job_$ENV(TAG)_$(ClusterId).$(ProcId).err
-log          = $ENV(WORK_DIR)/condor/logs/job_$ENV(TAG)_$(ClusterId).$(ProcId).log
+log          = $ENV(WORK_DIR)/condor/logs/job_$ENV(TAG)_$(ClusterId).log
 +JobFlavour  = "nextweek"
-request_memory = 8000
+request_memory = 8GB
 
 getenv = True
 should_transfer_files = YES
@@ -13,11 +13,14 @@ transfer_input_files = $ENV(X509_USER_PROXY)
 x509userproxy=$ENV(X509_USER_PROXY)
 use_x509userproxy = True
 JobBatchName = "$ENV(TAG)"
+notification = Complete
+notify_user = bobby21@bu.edu
 
 # Add "--doGlobal" as a 4th field for input dirs that were preselected with
 # do_bootstrap_preselection.py's --doGlobal (row_global/col_global, range
 # 0..32). Leave the field empty/absent for the default row/col behavior.
 queue input_dir,output_dir,trigger,doglobal from (
 #/eos/user/r/rovitale/repos/tbanalysis-bootstrap/processing/Test-bootstrap_{run_start}_{run_stop}_target-{target}_OPTSEL  /eos/user/r/rovitale/repos/tbanalysis-bootstrap/processing/results_{run_start}_{run_stop}  k  --doGlobal
-/eos/user/r/rovitale/repos/tbanalysis-bootstrap/processing/Test-bootstrap_147644_147885_target-2_OPTSEL  /eos/user/r/rovitale/repos/tbanalysis-bootstrap/processing/results_147644_147885  k
+#/eos/user/r/rovitale/repos/tbanalysis-bootstrap/processing/Test-bootstrap_147644_147885_target-trigger-2_OPTSEL  /eos/user/r/rovitale/repos/tbanalysis-bootstrap/processing/results_147644_147885  k
+/eos/user/r/rovitale/repos/tbanalysis-bootstrap/processing/Test-bootstrap_149585_149665_target-trigger-2_OPTSEL  /eos/user/r/rovitale/repos/tbanalysis-bootstrap/processing/results_149585_149665  k
 )
