@@ -3,3 +3,4 @@ venv/*
 condor/logs/*
 setup.sh
 userProxy
+__pycache__/*

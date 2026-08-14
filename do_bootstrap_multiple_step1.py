@@ -11,6 +11,7 @@ from glob import glob
 from scipy.optimize import curve_fit
 import os
 import argparse
+import json
 from tqdm import tqdm
 import mplhep as hep
 hep.style.use("CMS")
@@ -889,9 +890,11 @@ def run_bootstrap_analysis(row_i, col_i, presel_events_i, presel_events_j, prese
         combinations.append([[row_i, col_i], [row_j, col_j], [row_k, col_k]])
         rates.append(rate)
 
+    fit_parameter_records = []
+
     if len(combinations) == 0:
         print(f"WARNING: No valid combinations found for pixel row={row_i}, col={col_i}")
-        return None
+        return fit_parameter_records
 
 
     # Initial dtoa's and tot's
@@ -1023,6 +1026,22 @@ def run_bootstrap_analysis(row_i, col_i, presel_events_i, presel_events_j, prese
                 tw_corrected_j = np.polyfit(tot_j_forfit.to_list(), dtoa_j_forfit.to_list(), 2)
                 tw_corrected_k = np.polyfit(tot_k_forfit.to_list(), dtoa_k_forfit.to_list(), 2)
 
+                # Store one fit per target pixel and iteration, using its
+                # highest-statistics pixel triplet (the first combination).
+                if c == 0:
+                    for layer, row, col, coefficients in [
+                        (layer_i, sel_row_i, sel_col_i, tw_corrected_i),
+                        (layer_j, sel_row_j, sel_col_j, tw_corrected_j),
+                        (layer_k, sel_row_k, sel_col_k, tw_corrected_k),
+                    ]:
+                        fit_parameter_records.append({
+                            "layer": int(layer), "row": int(row), "col": int(col),
+                            "iteration": int(ITER), "n": int(len(sel_events_i)),
+                            "a": float(coefficients[0]),
+                            "b": float(coefficients[1]),
+                            "c": float(coefficients[2]),
+                        })
+
                 # Plot fits
                 plot_correction_fit(dtoa_data, tot_data, [tw_corrected_i, tw_corrected_j, tw_corrected_k], os.path.join(output_dirs['iterations'][ITER], 'fits_deltaTOA_TOT.png'), useTWC=True)
 
@@ -1075,6 +1094,8 @@ def run_bootstrap_analysis(row_i, col_i, presel_events_i, presel_events_j, prese
                 "Tjk_raw": T_jk_raw,
                 "Tki_raw": T_ki_raw
             }
+
+    return fit_parameter_records
 
 
 # ============================================================================
@@ -1517,6 +1538,7 @@ if __name__ == "__main__":
 
     limit = DOLIMIT
     ilimit = 0
+    fit_parameter_records = []
 
     for pixel_id, (pixel, count) in enumerate(zip(high_rate_pixels, high_rate_counts)):
         if ilimit > limit and DOLIMIT:
@@ -1532,7 +1554,7 @@ if __name__ == "__main__":
             if not (args.col_i==col_i):
                 continue
 
-        run_bootstrap_analysis(
+        pixel_fit_parameters = run_bootstrap_analysis(
             row_i=row_i,
             col_i=col_i,
             presel_events_i=presel_events_i,
@@ -1549,6 +1571,40 @@ if __name__ == "__main__":
             doIterPlotting=True,
             twFitType=args.tw_fit_type
         )
+        fit_parameter_records.extend(pixel_fit_parameters)
+
+    if fit_parameter_records:
+        # A reference-layer pixel may occur in several target-pixel triplets.
+        # Keep only its highest-statistics fit in each iteration.
+        best_records = {}
+        for record in fit_parameter_records:
+            key = (record['layer'], record['row'], record['col'], record['iteration'])
+            if key not in best_records or record['n'] > best_records[key]['n']:
+                best_records[key] = record
+        fit_parameter_records = list(best_records.values())
+
+        with open(os.path.join(BASE_OUTPUT_DIR, 'twc_fit_parameters.json'), 'w') as f:
+            json.dump(fit_parameter_records, f, indent=2)
+
+        for layer in [LAYER_I, LAYER_J, LAYER_K]:
+            layer_records = [record for record in fit_parameter_records if record['layer'] == layer]
+            for coefficient in ['a', 'b', 'c']:
+                fig, ax = plt.subplots(figsize=(9, 7))
+                values = [record[coefficient] for record in layer_records]
+                bins = np.histogram_bin_edges(values, bins=30)
+                for iteration in range(ITERATIONS):
+                    iteration_values = [record[coefficient] for record in layer_records
+                                        if record['iteration'] == iteration]
+                    ax.hist(iteration_values, bins=bins, histtype='step', linewidth=1.5,
+                            label=f'Iteration {iteration}')
+                ax.set_xlabel(f'Quadratic TWC coefficient {coefficient}')
+                ax.set_ylabel('Pixels')
+                ax.legend()
+                fig.tight_layout()
+                name = f'twc_coefficient_{coefficient}_layer{layer}'
+                fig.savefig(os.path.join(BASE_OUTPUT_DIR, name + '.png'), dpi=150)
+                fig.savefig(os.path.join(BASE_OUTPUT_DIR, name + '.pdf'))
+                plt.close(fig)
 
     print(f"\nAnalysis complete!")
 
