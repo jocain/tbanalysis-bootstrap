@@ -1546,7 +1546,7 @@ if __name__ == "__main__":
             iterations=ITERATIONS,
             doFWMH=True,
             useBest=USEBEST,
-            doIterPlotting=DOITERPLOTTING,
+            doIterPlotting=True,
             twFitType=args.tw_fit_type
         )
 
