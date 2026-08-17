@@ -62,6 +62,8 @@ def setup_output_directories(base_output_dir="output", n_iterations=10):
     dirs = {
         'base': base_output_dir,
         'heatmaps': os.path.join(base_output_dir, 'heatmaps'),
+        'twc': os.path.join(base_output_dir, 'TWC'),
+        'twc_iterations': [],
         'distributions': os.path.join(base_output_dir, 'distributions'),
         'final': os.path.join(base_output_dir, 'final'),
         'iterations': [],
@@ -72,6 +74,7 @@ def setup_output_directories(base_output_dir="output", n_iterations=10):
 
     # Create base directories
     os.makedirs(dirs['heatmaps'], exist_ok=True)
+    os.makedirs(dirs['twc'], exist_ok=True)
     os.makedirs(dirs['distributions'], exist_ok=True)
     os.makedirs(dirs['final'], exist_ok=True)
     os.makedirs(dirs['step1'], exist_ok=True)
@@ -83,8 +86,161 @@ def setup_output_directories(base_output_dir="output", n_iterations=10):
         iter_dir = os.path.join(base_output_dir, f'iter_{i:02d}')
         os.makedirs(iter_dir, exist_ok=True)
         dirs['iterations'].append(iter_dir)
+        twc_iter_dir = os.path.join(dirs['twc'], f'iter_{i:02d}')
+        os.makedirs(twc_iter_dir, exist_ok=True)
+        dirs['twc_iterations'].append(twc_iter_dir)
 
     return dirs
+
+
+def plot_twc_rms_heatmaps(fit_records, output_dir, layers, n_iterations,
+                          tot_min=0.0, tot_max=12.5, n_tot_points=251):
+    """Plot pixel-to-module TWC differences from the saved fit records.
+
+    The per-iteration maps compare the sum of a pixel's corrections through
+    the current iteration with the corresponding module-average sum.  One
+    final signed net-change map compares the total pixel-specific correction
+    with the total correction obtained by using the module average at every
+    step.  All curve comparisons use one common physical-TOT grid.
+    """
+    if not fit_records:
+        return
+    if not tot_max > tot_min:
+        raise ValueError("TWC RMS TOT maximum must be greater than its minimum")
+    if n_tot_points < 2:
+        raise ValueError("TWC RMS TOT grid must contain at least two points")
+
+    os.makedirs(output_dir, exist_ok=True)
+    tot_grid = np.linspace(tot_min, tot_max, n_tot_points)
+    records = {
+        (int(r['layer']), int(r['row']), int(r['col']), int(r['iteration'])):
+            np.array([r['a'], r['b'], r['c']], dtype=float)
+        for r in fit_records
+    }
+    pixels_by_layer = {
+        layer: sorted({(key[1], key[2]) for key in records if key[0] == layer})
+        for layer in layers
+    }
+
+    cumulative = {}
+    for layer in layers:
+        for row, col in pixels_by_layer[layer]:
+            running = np.zeros(3, dtype=float)
+            complete = True
+            for iteration in range(n_iterations):
+                coeffs = records.get((layer, row, col, iteration))
+                if coeffs is None:
+                    complete = False
+                if not complete:
+                    continue
+                running = running + coeffs
+                cumulative[(layer, row, col, iteration)] = running.copy()
+
+    def make_maps(iteration, coefficient_source):
+        maps = []
+        for layer in layers:
+            curves = []
+            curve_pixels = []
+            for row, col in pixels_by_layer[layer]:
+                coeffs = coefficient_source.get((layer, row, col, iteration))
+                if coeffs is not None:
+                    curves.append(np.polyval(coeffs, tot_grid))
+                    curve_pixels.append((row, col))
+
+            layer_map = np.full((N_PIX, N_PIX), np.nan)
+            if curves:
+                curves = np.asarray(curves)
+                module_average = np.mean(curves, axis=0)
+                rms_values = np.sqrt(np.mean((curves - module_average) ** 2, axis=1))
+                for (row, col), value in zip(curve_pixels, rms_values):
+                    if 0 <= row < N_PIX and 0 <= col < N_PIX:
+                        layer_map[row, col] = value
+            maps.append(layer_map)
+        return maps
+
+    def make_final_net_change_maps(iteration):
+        maps = []
+        for layer in layers:
+            curves = []
+            curve_pixels = []
+            for row, col in pixels_by_layer[layer]:
+                coeffs = cumulative.get((layer, row, col, iteration))
+                if coeffs is not None:
+                    curves.append(np.polyval(coeffs, tot_grid))
+                    curve_pixels.append((row, col))
+
+            layer_map = np.full((N_PIX, N_PIX), np.nan)
+            if curves:
+                curves = np.asarray(curves)
+                module_average = np.mean(curves, axis=0)
+                # Preserve the sign: positive means the pixel-specific total
+                # correction is larger than the module-average total.
+                differences = np.mean(curves - module_average, axis=1)
+                for (row, col), value in zip(curve_pixels, differences):
+                    if 0 <= row < N_PIX and 0 <= col < N_PIX:
+                        layer_map[row, col] = value
+            maps.append(layer_map)
+        return maps
+
+    def draw_maps(maps, filename, title, signed=False):
+        finite_parts = [m[np.isfinite(m)] for m in maps if np.any(np.isfinite(m))]
+        finite_values = np.concatenate(finite_parts) if finite_parts else np.array([])
+        vmax = (np.max(np.abs(finite_values)) if signed else np.max(finite_values)) \
+            if finite_values.size else 1.0
+        if vmax <= 0:
+            vmax = 1.0
+        vmin = -vmax if signed else 0
+        cmap = 'coolwarm' if signed else 'viridis'
+        scale = 4 if DO_GLOBAL_COORDINATES else 1
+        fig, axes = plt.subplots(1, len(layers), figsize=(33 * scale, 11 * scale),
+                                 squeeze=False)
+        axes = axes[0]
+        image = None
+        for index, (layer, layer_map) in enumerate(zip(layers, maps)):
+            image = axes[index].matshow(layer_map, cmap=cmap, vmin=vmin, vmax=vmax)
+            axes[index].set_title(f'Layer {layer}', fontsize=28 * scale)
+            axes[index].set_xlabel('Column', fontsize=24 * scale)
+            if index == 0:
+                axes[index].set_ylabel('Row', fontsize=24 * scale)
+            axes[index].tick_params(labelsize=20 * scale)
+            if DO_GLOBAL_COORDINATES:
+                axes[index].axhline(15.5, color='red', linewidth=4)
+                axes[index].axvline(15.5, color='red', linewidth=4)
+        fig.suptitle(title, fontsize=28 * scale)
+        cbar = fig.colorbar(image, ax=axes)
+        colorbar_label = ('Mean total correction difference [ns]' if signed
+                          else 'Unweighted RMS TWC difference [ns]')
+        cbar.set_label(colorbar_label, fontsize=22 * scale)
+        cbar.ax.tick_params(labelsize=20 * scale)
+        fig.savefig(filename + '.png', dpi=150, bbox_inches='tight')
+        fig.savefig(filename + '.pdf', bbox_inches='tight')
+        plt.close(fig)
+
+    for iteration in range(n_iterations):
+        iteration_dir = os.path.join(output_dir, f'iter_{iteration:02d}')
+        os.makedirs(iteration_dir, exist_ok=True)
+        draw_maps(
+            make_maps(iteration, cumulative),
+            os.path.join(iteration_dir, 'twc_rms_cumulative'),
+            f'Cumulative pixel TWC vs module-average TWC, iteration {iteration}'
+        )
+
+    final_iteration = n_iterations - 1
+    draw_maps(
+        make_final_net_change_maps(final_iteration),
+        os.path.join(output_dir, 'twc_net_change'),
+        'Net total correction: pixel TWC minus module-average TWC',
+        signed=True,
+    )
+
+    with open(os.path.join(output_dir, 'twc_rms_grid.json'), 'w') as f:
+        json.dump({
+            'tot_min_ns': float(tot_min), 'tot_max_ns': float(tot_max),
+            'n_tot_points': int(n_tot_points), 'weighting': 'uniform',
+            'cumulative_definition': 'sum of fits from iteration 0 through iteration i',
+            'net_change_definition': ('mean over TOT of the cumulative pixel-specific '
+                                      'correction minus the cumulative module-average correction'),
+        }, f, indent=2)
 
 def mode_cal(cal):
     x = ak.to_numpy(ak.flatten(cal, axis=None)).astype(float)
@@ -1138,6 +1294,12 @@ if __name__ == "__main__":
     parser.add_argument('--tw-fit-type', type=str, default='twc', choices=['linear', 'twc'],
                    help="Time-walk correction fit: 'linear' (curve_fit + func_lineal, default) or "
                         "'twc' (np.polyfit/np.poly1d degree-2 fit, matching twc.py)")
+    parser.add_argument('--twc-rms-tot-min', type=float, default=0.0,
+                   help='Lower physical-TOT bound in ns for unweighted TWC RMS maps (default: 0)')
+    parser.add_argument('--twc-rms-tot-max', type=float, default=12.5,
+                   help='Upper physical-TOT bound in ns for unweighted TWC RMS maps (default: 12.5)')
+    parser.add_argument('--twc-rms-tot-points', type=int, default=251,
+                   help='Number of uniformly spaced TOT points used by TWC RMS maps (default: 251)')
     parser.add_argument('--doGlobal', action='store_true',
                    help="Use row_global/col_global (range 0..31) instead of row/col "
                         "(range 0..16). Must match what do_bootstrap_preselection.py "
@@ -1583,28 +1745,40 @@ if __name__ == "__main__":
                 best_records[key] = record
         fit_parameter_records = list(best_records.values())
 
-        with open(os.path.join(BASE_OUTPUT_DIR, 'twc_fit_parameters.json'), 'w') as f:
+        with open(os.path.join(output_dirs['twc'], 'twc_fit_parameters.json'), 'w') as f:
             json.dump(fit_parameter_records, f, indent=2)
 
-        for layer in [LAYER_I, LAYER_J, LAYER_K]:
-            layer_records = [record for record in fit_parameter_records if record['layer'] == layer]
-            for coefficient in ['a', 'b', 'c']:
-                fig, ax = plt.subplots(figsize=(9, 7))
-                values = [record[coefficient] for record in layer_records]
-                bins = np.histogram_bin_edges(values, bins=30)
-                for iteration in range(ITERATIONS):
-                    iteration_values = [record[coefficient] for record in layer_records
-                                        if record['iteration'] == iteration]
-                    ax.hist(iteration_values, bins=bins, histtype='step', linewidth=1.5,
-                            label=f'Iteration {iteration}')
-                ax.set_xlabel(f'Quadratic TWC coefficient {coefficient}')
-                ax.set_ylabel('Pixels')
-                ax.legend()
-                fig.tight_layout()
-                name = f'twc_coefficient_{coefficient}_layer{layer}'
-                fig.savefig(os.path.join(BASE_OUTPUT_DIR, name + '.png'), dpi=150)
-                fig.savefig(os.path.join(BASE_OUTPUT_DIR, name + '.pdf'))
-                plt.close(fig)
+        plot_twc_rms_heatmaps(
+            fit_parameter_records,
+            output_dirs['twc'],
+            [LAYER_I, LAYER_J, LAYER_K],
+            ITERATIONS,
+            tot_min=args.twc_rms_tot_min,
+            tot_max=args.twc_rms_tot_max,
+            n_tot_points=args.twc_rms_tot_points,
+        )
+
+        for iteration in range(ITERATIONS):
+            iteration_dir = output_dirs['twc_iterations'][iteration]
+            for layer in [LAYER_I, LAYER_J, LAYER_K]:
+                iteration_records = [
+                    record for record in fit_parameter_records
+                    if record['layer'] == layer and record['iteration'] == iteration
+                ]
+                for coefficient in ['a', 'b', 'c']:
+                    values = [record[coefficient] for record in iteration_records]
+                    if not values:
+                        continue
+                    fig, ax = plt.subplots(figsize=(9, 7))
+                    ax.hist(values, bins=30, histtype='step', linewidth=1.5)
+                    ax.set_xlabel(f'Quadratic TWC coefficient {coefficient}')
+                    ax.set_ylabel('Pixels')
+                    ax.set_title(f'Layer {layer}, iteration {iteration}')
+                    fig.tight_layout()
+                    name = f'twc_coefficient_{coefficient}_layer{layer}'
+                    fig.savefig(os.path.join(iteration_dir, name + '.png'), dpi=150)
+                    fig.savefig(os.path.join(iteration_dir, name + '.pdf'))
+                    plt.close(fig)
 
     print(f"\nAnalysis complete!")
 
