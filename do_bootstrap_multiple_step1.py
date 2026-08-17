@@ -983,7 +983,10 @@ def fit_deltaT(T_ij, T_jk, T_ki, fitType, outDir, suffix, plot=True):
 
 
 def run_bootstrap_analysis(row_i, col_i, presel_events_i, presel_events_j, presel_events_k,
-                           output_base_dir, pixel_id, layer_i, layer_j, layer_k, iterations=10, doFWMH=True, useBest=False, doIterPlotting=True, twFitType='linear'):
+                           output_base_dir, pixel_id, layer_i, layer_j, layer_k, iterations=10,
+                           doFWMH=True, useBest=False, doIterPlotting=True,
+                           twFitType='linear', standard_twc_fits=None,
+                           is_standard_reference=False):
     """
     Run bootstrap analysis for a specific pixel in layer i
 
@@ -996,6 +999,11 @@ def run_bootstrap_analysis(row_i, col_i, presel_events_i, presel_events_j, prese
         iterations: Number of bootstrap iterations
         twFitType: Time-walk correction fit to use per iteration: 'linear' (curve_fit + func_lineal, default)
             or 'twc' (np.polyfit/np.poly1d degree-2 fit, matching twc.py's three_board_iterative_timewalk_correction)
+        standard_twc_fits: Optional dictionary keyed by (physical layer, iteration).
+            When supplied, these quadratic coefficients are applied instead of
+            fitting the current pixel data.
+        is_standard_reference: Mark records fitted from the highest-population
+            reference pixel used to construct standard_twc_fits.
 
     Returns:
         Dictionary with analysis results
@@ -1186,10 +1194,21 @@ def run_bootstrap_analysis(row_i, col_i, presel_events_i, presel_events_j, prese
             dtoa_data = [dtoa_i, dtoa_j, dtoa_k]
 
             if twFitType == 'twc':
-                # Same tools as twc.py's three_board_iterative_timewalk_correction: np.polyfit + np.poly1d
-                tw_corrected_i = np.polyfit(tot_i_forfit.to_list(), dtoa_i_forfit.to_list(), 2)
-                tw_corrected_j = np.polyfit(tot_j_forfit.to_list(), dtoa_j_forfit.to_list(), 2)
-                tw_corrected_k = np.polyfit(tot_k_forfit.to_list(), dtoa_k_forfit.to_list(), 2)
+                if standard_twc_fits is None:
+                    # Same tools as twc.py's three_board_iterative_timewalk_correction:
+                    # np.polyfit + np.poly1d.
+                    tw_corrected_i = np.polyfit(tot_i_forfit.to_list(), dtoa_i_forfit.to_list(), 2)
+                    tw_corrected_j = np.polyfit(tot_j_forfit.to_list(), dtoa_j_forfit.to_list(), 2)
+                    tw_corrected_k = np.polyfit(tot_k_forfit.to_list(), dtoa_k_forfit.to_list(), 2)
+                else:
+                    try:
+                        tw_corrected_i = np.asarray(standard_twc_fits[(layer_i, ITER)], dtype=float)
+                        tw_corrected_j = np.asarray(standard_twc_fits[(layer_j, ITER)], dtype=float)
+                        tw_corrected_k = np.asarray(standard_twc_fits[(layer_k, ITER)], dtype=float)
+                    except KeyError as exc:
+                        raise RuntimeError(
+                            f'Missing standardized TWC fit for layer/iteration {exc.args[0]}'
+                        ) from exc
 
                 # Store one fit per target pixel and iteration, using its
                 # highest-statistics pixel triplet (the first combination).
@@ -1205,6 +1224,9 @@ def run_bootstrap_analysis(row_i, col_i, presel_events_i, presel_events_j, prese
                             "a": float(coefficients[0]),
                             "b": float(coefficients[1]),
                             "c": float(coefficients[2]),
+                            "fit_source": ("standardized" if standard_twc_fits is not None
+                                           else "standard_reference" if is_standard_reference
+                                           else "pixel"),
                         })
 
                 # Plot fits
@@ -1309,6 +1331,9 @@ if __name__ == "__main__":
                    help='Upper physical-TOT bound in ns for TOA-correction RMS maps (default: 12.5)')
     parser.add_argument('--twc-rms-tot-points', type=int, default=251,
                    help='Number of uniformly spaced TOT points used by TOA-correction RMS maps (default: 251)')
+    parser.add_argument('--standardize-twc', action='store_true',
+                   help=('Fit the most populated layer-i pixel once, then apply its per-layer '
+                         'TWC fits to every pixel for the same number of iterations'))
     parser.add_argument('--doGlobal', action='store_true',
                    help="Use row_global/col_global (range 0..31) instead of row/col "
                         "(range 0..16). Must match what do_bootstrap_preselection.py "
@@ -1317,6 +1342,9 @@ if __name__ == "__main__":
 
 
     args = parser.parse_args()
+
+    if args.standardize_twc and args.tw_fit_type != 'twc':
+        parser.error('--standardize-twc requires --tw-fit-type twc')
 
     # Validate that i, j, k are all different
     if len(set([args.layer_i, args.layer_j, args.layer_k])) != 3:
@@ -1710,6 +1738,8 @@ if __name__ == "__main__":
     limit = DOLIMIT
     ilimit = 0
     fit_parameter_records = []
+    standard_twc_fits = None
+    standard_reference_pixel = tuple(map(int, high_rate_pixels[0])) if len(high_rate_pixels) else None
 
     for pixel_id, (pixel, count) in enumerate(zip(high_rate_pixels, high_rate_counts)):
         if ilimit > limit and DOLIMIT:
@@ -1717,11 +1747,15 @@ if __name__ == "__main__":
         ilimit +=1
 
         row_i, col_i = pixel
+        is_standard_reference = args.standardize_twc and pixel_id == 0
 
-        if args.row_i > 0:
+        # The highest-population pixel must always be processed first in
+        # standardized mode, even when a row/column selection requests only
+        # another target pixel.
+        if args.row_i > 0 and not is_standard_reference:
             if not (args.row_i==row_i):
                 continue
-        if args.col_i > 0:
+        if args.col_i > 0 and not is_standard_reference:
             if not (args.col_i==col_i):
                 continue
 
@@ -1740,9 +1774,34 @@ if __name__ == "__main__":
             doFWMH=True,
             useBest=USEBEST,
             doIterPlotting=True,
-            twFitType=args.tw_fit_type
+            twFitType=args.tw_fit_type,
+            standard_twc_fits=(None if is_standard_reference else standard_twc_fits),
+            is_standard_reference=is_standard_reference,
         )
         fit_parameter_records.extend(pixel_fit_parameters)
+
+        if is_standard_reference:
+            if not pixel_fit_parameters:
+                raise RuntimeError(
+                    f'Could not fit the standardized-TWC reference pixel {standard_reference_pixel}'
+                )
+            standard_twc_fits = {
+                (int(record['layer']), int(record['iteration'])):
+                    np.array([record['a'], record['b'], record['c']], dtype=float)
+                for record in pixel_fit_parameters
+            }
+            expected_keys = {
+                (layer, iteration)
+                for layer in [LAYER_I, LAYER_J, LAYER_K]
+                for iteration in range(ITERATIONS)
+            }
+            missing_keys = expected_keys.difference(standard_twc_fits)
+            if missing_keys:
+                raise RuntimeError(
+                    f'Standardized-TWC reference is missing fits for: {sorted(missing_keys)}'
+                )
+            print(f'Using highest-population pixel {standard_reference_pixel} as the '
+                  'standardized TWC reference for all remaining pixels')
 
     if fit_parameter_records:
         # A reference-layer pixel may occur in several target-pixel triplets.
@@ -1756,6 +1815,27 @@ if __name__ == "__main__":
 
         with open(os.path.join(output_dirs['twc'], 'twc_fit_parameters.json'), 'w') as f:
             json.dump(fit_parameter_records, f, indent=2)
+
+        if args.standardize_twc:
+            with open(os.path.join(output_dirs['twc'], 'standardized_twc.json'), 'w') as f:
+                json.dump({
+                    'enabled': True,
+                    'reference_layer': int(LAYER_I),
+                    'reference_row': int(standard_reference_pixel[0]),
+                    'reference_col': int(standard_reference_pixel[1]),
+                    'reference_hits': int(high_rate_counts[0]),
+                    'iterations': int(ITERATIONS),
+                    'fits': [
+                        {
+                            'layer': int(layer), 'iteration': int(iteration),
+                            'a': float(coefficients[0]),
+                            'b': float(coefficients[1]),
+                            'c': float(coefficients[2]),
+                        }
+                        for (layer, iteration), coefficients
+                        in sorted(standard_twc_fits.items())
+                    ],
+                }, f, indent=2)
 
         plot_twc_rms_heatmaps(
             fit_parameter_records,
