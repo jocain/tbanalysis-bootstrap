@@ -95,7 +95,7 @@ def setup_output_directories(base_output_dir="output", n_iterations=10):
 
 def plot_twc_rms_heatmaps(fit_records, output_dir, layers, n_iterations,
                           tot_min=0.0, tot_max=12.5, n_tot_points=251):
-    """Plot pixel-to-module TWC differences from the saved fit records.
+    """Plot differences in the TOA corrections produced by the TWC fits.
 
     The per-iteration maps compare the sum of a pixel's corrections through
     the current iteration with the corresponding module-average sum.  One
@@ -198,7 +198,14 @@ def plot_twc_rms_heatmaps(fit_records, output_dir, layers, n_iterations,
         image = None
         for index, (layer, layer_map) in enumerate(zip(layers, maps)):
             image = axes[index].matshow(layer_map, cmap=cmap, vmin=vmin, vmax=vmax)
-            axes[index].set_title(f'Layer {layer}', fontsize=28 * scale)
+            pixel_values = layer_map[np.isfinite(layer_map)]
+            if pixel_values.size:
+                pixel_mean = np.mean(pixel_values)
+                pixel_std = np.std(pixel_values)
+                statistics = f'Mean = {pixel_mean:.4g} ns, Std = {pixel_std:.4g} ns'
+            else:
+                statistics = 'Mean = N/A, Std = N/A'
+            axes[index].set_title(f'Layer {layer}\n{statistics}', fontsize=28 * scale)
             axes[index].set_xlabel('Column', fontsize=24 * scale)
             if index == 0:
                 axes[index].set_ylabel('Row', fontsize=24 * scale)
@@ -208,8 +215,8 @@ def plot_twc_rms_heatmaps(fit_records, output_dir, layers, n_iterations,
                 axes[index].axvline(15.5, color='red', linewidth=4)
         fig.suptitle(title, fontsize=28 * scale)
         cbar = fig.colorbar(image, ax=axes)
-        colorbar_label = ('Mean total correction difference [ns]' if signed
-                          else 'Unweighted RMS TWC difference [ns]')
+        colorbar_label = ('Mean total TOA correction difference [ns]' if signed
+                          else 'RMS TOA correction difference [ns]')
         cbar.set_label(colorbar_label, fontsize=22 * scale)
         cbar.ax.tick_params(labelsize=20 * scale)
         fig.savefig(filename + '.png', dpi=150, bbox_inches='tight')
@@ -222,14 +229,14 @@ def plot_twc_rms_heatmaps(fit_records, output_dir, layers, n_iterations,
         draw_maps(
             make_maps(iteration, cumulative),
             os.path.join(iteration_dir, 'twc_rms_cumulative'),
-            f'Cumulative pixel TWC vs module-average TWC, iteration {iteration}'
+            f'Pixel vs Module-Average Cumulative TOA Correction, Iteration {iteration}'
         )
 
     final_iteration = n_iterations - 1
     draw_maps(
         make_final_net_change_maps(final_iteration),
         os.path.join(output_dir, 'twc_net_change'),
-        'Net total correction: pixel TWC minus module-average TWC',
+        'Net TOA Correction: Pixel TWC minus Module-Average TWC',
         signed=True,
     )
 
@@ -237,9 +244,11 @@ def plot_twc_rms_heatmaps(fit_records, output_dir, layers, n_iterations,
         json.dump({
             'tot_min_ns': float(tot_min), 'tot_max_ns': float(tot_max),
             'n_tot_points': int(n_tot_points), 'weighting': 'uniform',
-            'cumulative_definition': 'sum of fits from iteration 0 through iteration i',
-            'net_change_definition': ('mean over TOT of the cumulative pixel-specific '
-                                      'correction minus the cumulative module-average correction'),
+            'quantity': 'TOA correction produced by the TWC polynomial',
+            'cumulative_definition': ('sum of TOA corrections from iteration 0 '
+                                      'through iteration i'),
+            'net_change_definition': ('mean over TOT of the cumulative pixel-specific TOA '
+                                      'correction minus the cumulative module-average TOA correction'),
         }, f, indent=2)
 
 def mode_cal(cal):
@@ -1295,11 +1304,11 @@ if __name__ == "__main__":
                    help="Time-walk correction fit: 'linear' (curve_fit + func_lineal, default) or "
                         "'twc' (np.polyfit/np.poly1d degree-2 fit, matching twc.py)")
     parser.add_argument('--twc-rms-tot-min', type=float, default=0.0,
-                   help='Lower physical-TOT bound in ns for unweighted TWC RMS maps (default: 0)')
+                   help='Lower physical-TOT bound in ns for TOA-correction RMS maps (default: 0)')
     parser.add_argument('--twc-rms-tot-max', type=float, default=12.5,
-                   help='Upper physical-TOT bound in ns for unweighted TWC RMS maps (default: 12.5)')
+                   help='Upper physical-TOT bound in ns for TOA-correction RMS maps (default: 12.5)')
     parser.add_argument('--twc-rms-tot-points', type=int, default=251,
-                   help='Number of uniformly spaced TOT points used by TWC RMS maps (default: 251)')
+                   help='Number of uniformly spaced TOT points used by TOA-correction RMS maps (default: 251)')
     parser.add_argument('--doGlobal', action='store_true',
                    help="Use row_global/col_global (range 0..31) instead of row/col "
                         "(range 0..16). Must match what do_bootstrap_preselection.py "
