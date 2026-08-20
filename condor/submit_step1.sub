@@ -1,5 +1,5 @@
 executable   = $ENV(WORK_DIR)/condor/executable_step1.sh
-arguments    = $(input_dir) $(output_dir) $(trigger) $(doglobal)
+arguments    = $(input_dir) $(output_dir) $(trigger) $(doglobal) $(standardize)
 output       = $ENV(WORK_DIR)/condor/logs/job_$ENV(TAG)_$(ClusterId).$(ProcId).out
 error        = $ENV(WORK_DIR)/condor/logs/job_$ENV(TAG)_$(ClusterId).$(ProcId).err
 log          = $ENV(WORK_DIR)/condor/logs/job_$ENV(TAG)_$(ClusterId).log
@@ -19,8 +19,20 @@ notify_user = bobby21@bu.edu
 # Add "--doGlobal" as a 4th field for input dirs that were preselected with
 # do_bootstrap_preselection.py's --doGlobal (row_global/col_global, range
 # 0..32). Leave the field empty/absent for the default row/col behavior.
-queue input_dir,output_dir,trigger,doglobal from (
+queue input_dir,output_dir,trigger,doglobal,standardize from (
 #/eos/user/r/rovitale/repos/tbanalysis-bootstrap/processing/Test-bootstrap_{run_start}_{run_stop}_target-{target}_OPTSEL  /eos/user/r/rovitale/repos/tbanalysis-bootstrap/processing/results_{run_start}_{run_stop}  k  --doGlobal
 #/eos/user/r/rovitale/repos/tbanalysis-bootstrap/processing/Test-bootstrap_147644_147885_target-trigger-2_OPTSEL  /eos/user/r/rovitale/repos/tbanalysis-bootstrap/processing/results_147644_147885  k
-/eos/user/r/rovitale/repos/tbanalysis-bootstrap/processing/Test-bootstrap_149585_149665_target-trigger-2_OPTSEL  /eos/user/r/rovitale/repos/tbanalysis-bootstrap/processing/results_149585_149665  k
+#/eos/user/r/rovitale/repos/tbanalysis-bootstrap/processing/Test-bootstrap_149585_149665_target-trigger-2_OPTSEL  /eos/user/r/rovitale/repos/tbanalysis-bootstrap/processing/results_149585_149665  k --standardize-twc
+#/eos/user/r/rovitale/repos/tbanalysis-bootstrap/processing/Test-bootstrap_147124_147487_target-trigger-2_OPTSEL  /eos/user/r/rovitale/repos/tbanalysis-bootstrap/processing/standard_results_147124_147487  k --standardize-twc
+#/eos/user/r/rovitale/repos/tbanalysis-bootstrap/processing/Test-bootstrap_147488_147565_target-trigger-2_OPTSEL  /eos/user/r/rovitale/repos/tbanalysis-bootstrap/processing/standard_results_147488_147565  k --standardize-twc
+#/eos/user/r/rovitale/repos/tbanalysis-bootstrap/processing/Test-bootstrap_147566_147641_target-trigger-2_OPTSEL  /eos/user/r/rovitale/repos/tbanalysis-bootstrap/processing/standard_results_147566_147641  k --standardize-twc
+#/eos/user/r/rovitale/repos/tbanalysis-bootstrap/processing/Test-bootstrap_147644_147885_target-trigger-2_OPTSEL  /eos/user/r/rovitale/repos/tbanalysis-bootstrap/processing/standard_results_147644_147885  k --standardize-twc
+#/eos/user/r/rovitale/repos/tbanalysis-bootstrap/processing/Test-bootstrap_147886_147966_target-trigger-2_OPTSEL  /eos/user/r/rovitale/repos/tbanalysis-bootstrap/processing/standard_results_147886_147966  k --standardize-twc
+#/eos/user/r/rovitale/repos/tbanalysis-bootstrap/processing/Test-bootstrap_147967_148053_target-trigger-2_OPTSEL  /eos/user/r/rovitale/repos/tbanalysis-bootstrap/processing/standard_results_147967_148053  k --standardize-twc
+#/eos/user/r/rovitale/repos/tbanalysis-bootstrap/processing/Test-bootstrap_148847_148926_target-trigger-2_OPTSEL  /eos/user/r/rovitale/repos/tbanalysis-bootstrap/processing/standard_results_148847_148926  k --standardize-twc
+#/eos/user/r/rovitale/repos/tbanalysis-bootstrap/processing/Test-bootstrap_148927_149131_target-trigger-2_OPTSEL  /eos/user/r/rovitale/repos/tbanalysis-bootstrap/processing/standard_results_148927_149131  k --standardize-twc
+#/eos/user/r/rovitale/repos/tbanalysis-bootstrap/processing/Test-bootstrap_149132_149203_target-trigger-2_OPTSEL  /eos/user/r/rovitale/repos/tbanalysis-bootstrap/processing/standard_results_149132_149203  k --standardize-twc
+#/eos/user/r/rovitale/repos/tbanalysis-bootstrap/processing/Test-bootstrap_149204_149279_target-trigger-2_OPTSEL  /eos/user/r/rovitale/repos/tbanalysis-bootstrap/processing/standard_results_149204_149279  k --standardize-twc
+#/eos/user/r/rovitale/repos/tbanalysis-bootstrap/processing/Test-bootstrap_149280_149350_target-trigger-2_OPTSEL  /eos/user/r/rovitale/repos/tbanalysis-bootstrap/processing/standard_results_149280_149350  k --standardize-twc
+#/eos/user/r/rovitale/repos/tbanalysis-bootstrap/processing/Test-bootstrap_149585_149665_target-trigger-2_OPTSEL  /eos/user/r/rovitale/repos/tbanalysis-bootstrap/processing/standard_results_149585_149665  k --standardize-twc
 )
