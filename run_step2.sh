@@ -1,7 +1,52 @@
-python do_bootstrap_multiple_step2.py --input-dir /eos/user/f/fernance/ETL/Bootstrap/April2026/Results/ResultsTWC_137166_138055/step1 --output-dir /eos/user/f/fernance/ETL/Bootstrap/April2026/Results/ResultsTWC_137166_138055/step2
-#python do_bootstrap_multiple_step2.py --input-dir /eos/user/f/fernance/ETL/Bootstrap/April2026/Results/ResultsTWC_138084_138483/step1 --output-dir /eos/user/f/fernance/ETL/Bootstrap/April2026/Results/ResultsTWC_138084_138483/step2
-#python do_bootstrap_multiple_step2.py --input-dir /eos/user/f/fernance/ETL/Bootstrap/April2026/Results/ResultsTWC_138484_138794/step1 --output-dir /eos/user/f/fernance/ETL/Bootstrap/April2026/Results/ResultsTWC_138484_138794/step2
-#python do_bootstrap_multiple_step2.py --input-dir /eos/user/f/fernance/ETL/Bootstrap/April2026/Results/ResultsTWC_138484_138794/step1 --output-dir /eos/user/f/fernance/ETL/Bootstrap/April2026/Results/ResultsTWC_138484_138794/step2
-python do_bootstrap_multiple_step2.py --input-dir /eos/user/f/fernance/ETL/Bootstrap/April2026/Results/ResultsTWC_138795_139758/step1 --output-dir /eos/user/f/fernance/ETL/Bootstrap/April2026/Results/ResultsTWC_138795_139758/step2
-python do_bootstrap_multiple_step2.py --input-dir /eos/user/f/fernance/ETL/Bootstrap/April2026/Results/ResultsTWC_139759_140130/step1 --output-dir /eos/user/f/fernance/ETL/Bootstrap/April2026/Results/ResultsTWC_139759_140130/step2
-#python do_bootstrap_multiple_step2.py --input-dir /eos/user/f/fernance/ETL/Bootstrap/April2026/Results/ResultsTWC_140131_140391/step1 --output-dir /eos/user/f/fernance/ETL/Bootstrap/April2026/Results/ResultsTWC_140131_140391/step2
+python3 do_bootstrap_multiple_step2.py \
+--input-dir results/Test-bootstrap_147124_147487_target-trigger-2_OPTSEL/step1/" \
+--output-dir "results/Test-bootstrap_147124_147487_target-trigger-2_OPTSEL/step2/"
+
+python3 do_bootstrap_multiple_step2.py \
+--input-dir results/Test-bootstrap_147488_147565_target-trigger-2_OPTSEL/step1/" \
+--output-dir "results/Test-bootstrap_147488_147565_target-trigger-2_OPTSEL/step2/"
+
+python3 do_bootstrap_multiple_step2.py \
+--input-dir results/Test-bootstrap_147566_147641_target-trigger-2_OPTSEL/step1/" \
+--output-dir "results/Test-bootstrap_147566_147641_target-trigger-2_OPTSEL/step2/"
+
+python3 do_bootstrap_multiple_step2.py \
+--input-dir results/Test-bootstrap_147644_147885_target-trigger-2_OPTSEL/step1/" \
+--output-dir "results/Test-bootstrap_147644_147885_target-trigger-2_OPTSEL/step2/"
+
+python3 do_bootstrap_multiple_step2.py \
+--input-dir results/Test-bootstrap_147886_147966_target-trigger-2_OPTSEL/step1/" \
+--output-dir "results/Test-bootstrap_147886_147966_target-trigger-2_OPTSEL/step2/"
+
+python3 do_bootstrap_multiple_step2.py \
+--input-dir results/Test-bootstrap_147967_148053_target-trigger-2_OPTSEL/step1/" \
+--output-dir "results/Test-bootstrap_147967_148053_target-trigger-2_OPTSEL/step2/"
+
+python3 do_bootstrap_multiple_step2.py \
+--input-dir results/Test-bootstrap_148847_148926_target-trigger-2_OPTSEL/step1/" \
+--output-dir "results/Test-bootstrap_148847_148926_target-trigger-2_OPTSEL/step2/"
+
+python3 do_bootstrap_multiple_step2.py \
+--input-dir results/Test-bootstrap_148927_149131_target-trigger-2_OPTSEL/step1/" \
+--output-dir "results/Test-bootstrap_148927_149131_target-trigger-2_OPTSEL/step2/"
+
+python3 do_bootstrap_multiple_step2.py \
+--input-dir results/Test-bootstrap_149132_149203_target-trigger-2_OPTSEL/step1/" \
+--output-dir "results/Test-bootstrap_149132_149203_target-trigger-2_OPTSEL/step2/"
+
+python3 do_bootstrap_multiple_step2.py \
+--input-dir results/Test-bootstrap_149204_149279_target-trigger-2_OPTSEL/step1/" \
+--output-dir "results/Test-bootstrap_149204_149279_target-trigger-2_OPTSEL/step2/"
+
+python3 do_bootstrap_multiple_step2.py \
+--input-dir results/Test-bootstrap_149280_149428_target-trigger-2_OPTSEL/step1/" \
+--output-dir "results/Test-bootstrap_149280_149428_target-trigger-2_OPTSEL/step2/"
+
+python3 do_bootstrap_multiple_step2.py \
+--input-dir results/Test-bootstrap_149436_149584_target-trigger-2_OPTSEL/step1/" \
+--output-dir "results/Test-bootstrap_149436_149584_target-trigger-2_OPTSEL/step2/"
+
+python3 do_bootstrap_multiple_step2.py \
+--input-dir results/Test-bootstrap_149585_149665_target-trigger-2_OPTSEL/step1/" \
+--output-dir "results/Test-bootstrap_149585_149665_target-trigger-2_OPTSEL/step2/"
+

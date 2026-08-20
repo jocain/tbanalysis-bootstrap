@@ -4,12 +4,26 @@
 #python do_bootstrap_preselection.py 137065	137160 2
 #python do_bootstrap_preselection.py 137166	138055 2
 #python do_bootstrap_preselection.py 138084	138483 2
-python do_bootstrap_preselection.py 138484	138794 0
-python do_bootstrap_preselection.py 138795	139758 0
-python do_bootstrap_preselection.py 139759	140130 0
-python do_bootstrap_preselection.py 140131	140391 0
-python do_bootstrap_preselection.py 140392	140999 0
-python do_bootstrap_preselection.py 141000	141816 0
-python do_bootstrap_preselection.py 141817	142144 0
-python do_bootstrap_preselection.py 142177	142233 0
-python do_bootstrap_preselection.py 142234	142371 0
+#python do_bootstrap_preselection.py 138484	138794 0
+#python do_bootstrap_preselection.py 138795	139758 0
+#python do_bootstrap_preselection.py 139759	140130 0
+#python do_bootstrap_preselection.py 140131	140391 0
+#python do_bootstrap_preselection.py 140392	140999 0
+#python do_bootstrap_preselection.py 141000	141816 0
+#python do_bootstrap_preselection.py 141817	142144 0
+#python do_bootstrap_preselection.py 142177	142233 0
+#python do_bootstrap_preselection.py 142234	142371 0
+
+python3 do_bootstrap_preselection.py 147124	147487	2
+python3 do_bootstrap_preselection.py 147488	147565	2
+python3 do_bootstrap_preselection.py 147566	147641	2
+python3 do_bootstrap_preselection.py 147644	147885	2
+python3 do_bootstrap_preselection.py 147886	147966	2
+python3 do_bootstrap_preselection.py 147967	148053	2
+python3 do_bootstrap_preselection.py 148847	148926	2
+python3 do_bootstrap_preselection.py 148927	149131	2
+python3 do_bootstrap_preselection.py 149132	149203	2
+python3 do_bootstrap_preselection.py 149204	149279	2
+python3 do_bootstrap_preselection.py 149280	149350	2
+# python3 do_bootstrap_preselection.py 149436	149584	2 #Bad
+python3 do_bootstrap_preselection.py 149585	149665	2

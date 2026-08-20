@@ -1,5 +1,6 @@
 executable   = $ENV(WORK_DIR)/condor/executable_preselection.sh
 arguments    = $(run_start) $(run_stop) $(trigger) $(doglobal)
+output_destination = root://eosuser.cern.ch/$ENV(WORK_DIR)/condor/logs/
 output       = $ENV(WORK_DIR)/condor/logs/job_$ENV(TAG)_$(ClusterId).$(ProcId).out
 error        = $ENV(WORK_DIR)/condor/logs/job_$ENV(TAG)_$(ClusterId).$(ProcId).err
 log          = $ENV(WORK_DIR)/condor/logs/job_$ENV(TAG)_$(ClusterId).$(ProcId).log
@@ -17,11 +18,16 @@ JobBatchName = "$ENV(TAG)"
 # (range 0..32) instead of row/col. Leave the field empty/absent for the
 # default row/col (range 0..16) behavior.
 queue run_start,run_stop,trigger,doglobal from (
-#147124 147487 2
-#147488 147565 2
-#147566 147641 2
-#147644 147885 2
-#147886 147966 2
-#147967 148053 2
-148162 148408 2 --doGlobal
+147124	147487	2
+147488	147565	2
+147566	147641	2
+147644	147885	2
+147886	147966	2
+147967	148053	2
+148847	148926	2
+148927	149131	2
+149132	149203	2
+149204	149279	2
+149280	149350	2
+149585	149665	2
 )

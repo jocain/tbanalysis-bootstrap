@@ -658,8 +658,8 @@ def main():
     run_stop = int(argv[1]) # 133181
     trigger = int(argv[2]) # 0
     target = f"trigger-{trigger}"
-    output_dir = f"/eos/user/f/fernance/ETL/Bootstrap/July2026/Test-bootstrap_{run_start}_{run_stop}_target-{target}_OPTSEL"
-
+    # output_dir = f"/eos/user/f/fernance/ETL/Bootstrap/July2026/Test-bootstrap_{run_start}_{run_stop}_target-{target}_OPTSEL"
+    output_dir = f"/eos/user/j/joocain/ETL/July2026/Test-bootstrap_{run_start}_{run_stop}_target-{target}_OPTSEL"
     ### Selection options
     do1HitUniform = False
 
@@ -712,7 +712,7 @@ def main():
         preselect_and_save_single(
             run_files,
             output_dir,
-            step_size=500000,
+            step_size=50000,
             concat_every=10,
             do1HitUniform=do1HitUniform,
             trigger=trigger
