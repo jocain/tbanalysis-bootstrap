@@ -377,6 +377,18 @@ def _masked_valid_sigmas(sigma_map, mask):
     return values[~np.isnan(values)]
 
 
+def _save_sigma_map_json(sigma_map, moduleid, output_dir, suffix=""):
+    """Save a resolution matrix as JSON, representing non-finite cells as null."""
+    output_path = os.path.join(output_dir, f"sigma_{moduleid}_resolution{suffix}.json")
+    json_data = [
+        [float(value) if np.isfinite(value) else None for value in row]
+        for row in np.asarray(sigma_map)
+    ]
+    with open(output_path, 'w') as f:
+        json.dump(json_data, f, indent=2)
+    print(f"Resolution matrix saved to: {output_path}")
+
+
 def _plot_sigma_heatmap(sigma_map, moduleid, output_dir, stat_mean, stat_std, suffix="", label_suffix=""):
     """Standalone (N_PIX,N_PIX) resolution heatmap, saved as sigma_{moduleid}_resolution{suffix}.png/pdf."""
     # Same scaling/style as plotLayerMaps() in do_bootstrap_multiple_step1.py, so
@@ -442,6 +454,10 @@ def plot_resolution_plots(sigma_map, info, output_dir, mask, sigma_map_raw=None)
     """
 
     moduleid = info.split('_')[3]
+
+    _save_sigma_map_json(sigma_map, moduleid, output_dir)
+    if sigma_map_raw is not None:
+        _save_sigma_map_json(sigma_map_raw, moduleid, output_dir, suffix="_raw")
 
     sigmas_for_stats = _masked_valid_sigmas(sigma_map, mask)
 
