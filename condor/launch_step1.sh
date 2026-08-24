@@ -15,4 +15,4 @@ echo "Work dir : $WORK_DIR"
 echo "Script   : $SCRIPT"
 echo "Tag      : $TAG"
 
-condor_submit $WORK_DIR/condor/submit_step1.sub
+condor_submit -spool $WORK_DIR/condor/submit_step1.sub
