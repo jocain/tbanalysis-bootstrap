@@ -1,4 +1,4 @@
-export RESULTS_DIR="results_TWCStudy08202026"
+export RESULTS_DIR="results_NPixStandardizedTWC_N5"
 
 python3 do_bootstrap_multiple_step3.py \
 --input-dir "${RESULTS_DIR}/Test-bootstrap_147124_147487_target-trigger-2_OPTSEL/step2/" \
