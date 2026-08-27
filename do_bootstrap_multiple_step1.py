@@ -1008,18 +1008,36 @@ def run_bootstrap_analysis(row_i, col_i, presel_events_i, presel_events_j, prese
     Returns:
         Dictionary with analysis results
     """
-
-    # Create output directory for this pixel
-    pixel_output_dir = os.path.join(output_base_dir, f'pixel_{pixel_id}_row{row_i}_col{col_i}')
-    output_dirs = setup_output_directories(base_output_dir=pixel_output_dir, n_iterations=iterations)
-
-    print(f"\n{'='*80}")
-    print(f"Analyzing pixel {pixel_id}: row={row_i}, col={col_i}")
-    print(f"Output directory: {pixel_output_dir}")
-    print(f"{'='*80}\n")
-
     # First pixel preselection
-    MASK_TARGET_I = ak.flatten((presel_events_i.row==row_i) & (presel_events_i.col==col_i))
+    print(row_i, col_i)
+    if (type(row_i) == int) and (type(col_i) == int) and (type(pixel_id) == int):
+        pixel_output_dir = os.path.join(output_base_dir, f'pixel_{pixel_id}_row{row_i}_col{col_i}')
+        output_dirs = setup_output_directories(base_output_dir=pixel_output_dir, n_iterations=iterations)
+        MASK_TARGET_I = ak.flatten(
+            (presel_events_i.row==row_i) & (presel_events_i.col==col_i)
+            )
+        print(f"\n{'='*80}")
+        print(f"Analyzing pixel {pixel_id}: row={row_i}, col={col_i}")
+        print(f"Output directory: {pixel_output_dir}")
+        print(f"{'='*80}\n")
+        pixels = [(row_i, col_i)]
+    elif (type(row_i) == list) and (type(col_i) == list) and (type(pixel_id) == list):
+        if is_standard_reference:
+            pixel_output_dir = os.path.join(output_base_dir, f'stdref_pixel_{np.min(pixel_id)}_through_{np.max(pixel_id)}')
+        else:
+            pixel_output_dir = os.path.join(output_base_dir, '_'.join(f'pixel_{pid}_row{r}_col{c}' for pid, r, c in zip(pixel_id, row_i, col_i)))
+        output_dirs = setup_output_directories(base_output_dir=pixel_output_dir, n_iterations=iterations)
+        MASK_TARGET_I = np.zeros(len(presel_events_i), dtype=bool)
+        for r, c in zip(row_i, col_i):
+            MASK_TARGET_I = MASK_TARGET_I | ak.flatten((presel_events_i.row == r) & (presel_events_i.col == c))
+        print(MASK_TARGET_I)
+        print(f"\n{'='*80}")
+        print(f"Analyzing pixels: \n " + ", \n".join(f"\t{pid}: row={r}, col={c}" for pid, r, c in zip(pixel_id, row_i, col_i)))
+        print(f"Output directory: {pixel_output_dir}")
+        print(f"{'='*80}\n")
+        pixels = zip(row_i, col_i)
+    else:
+        raise ValueError(f"row_i, col_i, and pixel_id must be both int or both list of ints (Actual: row_i->{type(row_i)}, col_i->{type(col_i)}, pixel_id->{type(pixel_id)})")
 
     maski_events_i = presel_events_i[MASK_TARGET_I]
     maski_events_j = presel_events_j[MASK_TARGET_I]
@@ -1032,127 +1050,408 @@ def run_bootstrap_analysis(row_i, col_i, presel_events_i, presel_events_j, prese
         maski_events_i, maski_events_j, maski_events_k
     )
 
-    # Find combinations for layers j and k (symmetric approach)
-    combinations = []
-    rates = []
+    if type(row_i) == list and not useBest:
+        raise ValueError('I thought I told you not to do this.')
 
-    # Get all (j, k) pixel pairs from events that passed through layer i
-    # This is symmetric - order of j and k doesn't matter
-    pixels_j = ak.flatten(maski_events_j.row), ak.flatten(maski_events_j.col)
-    pixels_k = ak.flatten(maski_events_k.row), ak.flatten(maski_events_k.col)
-
-    # Create triplets (row_i, col_i, row_j, col_j, row_k, col_k) for each event
-    triplets = list(zip(pixels_j[0], pixels_j[1], pixels_k[0], pixels_k[1]))
-
-    # Count unique (j, k) combinations
-    unique_triplets, triplet_rates = np.unique(triplets, axis=0, return_counts=True)
-
-    # Filter combinations with at least 3 events
-    valid_mask = triplet_rates >= 3
-    unique_triplets = unique_triplets[valid_mask]
-    triplet_rates = triplet_rates[valid_mask]
-
-    # Sort by rate (descending)
-    sort_idx = np.argsort(triplet_rates)[::-1]
-    unique_triplets = unique_triplets[sort_idx]
-    triplet_rates = triplet_rates[sort_idx]
-
-    # Build combinations list
-    for triplet, rate in zip(unique_triplets, triplet_rates):
-        row_j, col_j, row_k, col_k = triplet
-        combinations.append([[row_i, col_i], [row_j, col_j], [row_k, col_k]])
-        rates.append(rate)
-
-    fit_parameter_records = []
-
-    if len(combinations) == 0:
-        print(f"WARNING: No valid combinations found for pixel row={row_i}, col={col_i}")
-        return fit_parameter_records
+    if type(row_i) == int:
+        # Find combinations for layers j and k (symmetric approach)
+        combinations = []
+        rates = []
 
 
-    # Initial dtoa's and tot's
-    init_dtoa_i  = np.array([])
-    init_tot_i   = np.array([])
-    final_dtoa_i = np.array([])
-    final_tot_i  = np.array([])
+        # Get all (j, k) pixel pairs from events that passed through layer i
+        # This is symmetric - order of j and k doesn't matter
+        pixels_j = ak.flatten(maski_events_j.row), ak.flatten(maski_events_j.col)
+        pixels_k = ak.flatten(maski_events_k.row), ak.flatten(maski_events_k.col)
 
-    # Full corrected dT's
-    full_corr_Tij = np.array([])
-    full_corr_Tjk = np.array([])
-    full_corr_Tki = np.array([])
+        # Create triplets (row_i, col_i, row_j, col_j, row_k, col_k) for each event
+        triplets = list(zip(pixels_j[0], pixels_j[1], pixels_k[0], pixels_k[1]))
 
-    # Full corrected dT's
-    full_tot_i      = np.array([])
-    full_tot_code_i = np.array([])
-    full_toa_i      = np.array([])
-    full_toa_code_i = np.array([])
+        # Count unique (j, k) combinations
+        unique_triplets, triplet_rates = np.unique(triplets, axis=0, return_counts=True)
 
-    # Select the pixels
-    doCombination = True
-    final_combinations = []
-    if doCombination:
-        for c,comb in enumerate(combinations):
-            if rates[c] > 200:
-                final_combinations.append(comb)
+        # Filter combinations with at least 3 events
+        valid_mask = triplet_rates >= 3
+        unique_triplets = unique_triplets[valid_mask]
+        triplet_rates = triplet_rates[valid_mask]
+
+        # Sort by rate (descending)
+        sort_idx = np.argsort(triplet_rates)[::-1]
+        unique_triplets = unique_triplets[sort_idx]
+        triplet_rates = triplet_rates[sort_idx]
+
+        # Build combinations list
+        for triplet, rate in zip(unique_triplets, triplet_rates):
+            row_j, col_j, row_k, col_k = triplet
+            combinations.append([[row_i, col_i], [row_j, col_j], [row_k, col_k]])
+            rates.append(rate)
+
+        fit_parameter_records = []
+
+        if len(combinations) == 0:
+            print(f"WARNING: No valid combinations found for pixel row={row_i}, col={col_i}")
+            return fit_parameter_records
+
+
+        # Initial dtoa's and tot's
+        init_dtoa_i  = np.array([])
+        init_tot_i   = np.array([])
+        final_dtoa_i = np.array([])
+        final_tot_i  = np.array([])
+
+        # Full corrected dT's
+        full_corr_Tij = np.array([])
+        full_corr_Tjk = np.array([])
+        full_corr_Tki = np.array([])
+
+        # Full corrected dT's
+        full_tot_i      = np.array([])
+        full_tot_code_i = np.array([])
+        full_toa_i      = np.array([])
+        full_toa_code_i = np.array([])
+
+        # Select the pixels
+        doCombination = True
+        final_combinations = []
+        if doCombination:
+            for c,comb in enumerate(combinations):
+                if rates[c] > 200:
+                    final_combinations.append(comb)
+        else:
+            final_combinations = combinations[:1]
+
+        print(f"Found {len(combinations)} valid combinations")
+        if not useBest:
+            if args.standardize_twc > 0:
+                raise ValueError('I thought I told you not to do this.')
+            print(f"Final combinations to try: {len(final_combinations)}")
+            for c in range(0, len(final_combinations)):
+                print(final_combinations[c], rates[c])
+            print(f"Top combination: {combinations[0]} with {rates[0]} events")
+        else:
+            final_combinations = final_combinations[:1]
+            print(f"Only using one combination: {combinations[0]} with {rates[0]} events")
+
+        # Loop over pixels:
+        for c in tqdm(range(0, len(final_combinations)), desc="Pixel combinations"):
+
+            # Select final pixel combination (highest rate)
+            sel_row_i, sel_col_i = combinations[c][0]
+            sel_row_j, sel_col_j = combinations[c][1]
+            sel_row_k, sel_col_k = combinations[c][2]
+
+            MASK_SEL = ak.flatten((maski_events_i.row==sel_row_i) & (maski_events_i.col==sel_col_i) &
+                                (maski_events_j.row==sel_row_j) & (maski_events_j.col==sel_col_j) &
+                                (maski_events_k.row==sel_row_k) & (maski_events_k.col==sel_col_k))
+
+            sel_events_i = maski_events_i[MASK_SEL]
+            sel_events_j = maski_events_j[MASK_SEL]
+            sel_events_k = maski_events_k[MASK_SEL]
+
+            # Calculate TOA and TOT values
+            toa_code_i = ak.flatten(sel_events_i.toa_code)
+            toa_code_j = ak.flatten(sel_events_j.toa_code)
+            toa_code_k = ak.flatten(sel_events_k.toa_code)
+
+            tot_code_i = ak.flatten(sel_events_i.tot_code)
+            tot_code_j = ak.flatten(sel_events_j.tot_code)
+            tot_code_k = ak.flatten(sel_events_k.tot_code)
+
+            cal_code_i = ak.flatten(sel_events_i.cal_code)
+            cal_code_j = ak.flatten(sel_events_j.cal_code)
+            cal_code_k = ak.flatten(sel_events_k.cal_code)
+
+            # Calculate TOA and TOT
+            toa_i = 12.5 - 3.125 / cal_code_i * toa_code_i
+            toa_j = 12.5 - 3.125 / cal_code_j * toa_code_j
+            toa_k = 12.5 - 3.125 / cal_code_k * toa_code_k
+
+            tot_i = ((2*tot_code_i - np.floor(tot_code_i/32))*3.125 / cal_code_i)
+            tot_j = ((2*tot_code_j - np.floor(tot_code_j/32))*3.125 / cal_code_j)
+            tot_k = ((2*tot_code_k - np.floor(tot_code_k/32))*3.125 / cal_code_k)
+
+            # dT differences before any TWC correction is applied
+            T_ij_raw = toa_i - toa_j
+            T_jk_raw = toa_j - toa_k
+            T_ki_raw = toa_k - toa_i
+
+            # Bootstrap iterations
+            #for ITER in range(0, iterations):
+            for ITER in tqdm(range(iterations), desc=f"Iterations for combination {final_combinations[c]}", leave=False):
+
+                # Calculate delta TOA for each layer
+                dtoa_i = (toa_j + toa_k) / 2.0 - toa_i
+                dtoa_j = (toa_k + toa_i) / 2.0 - toa_j
+                dtoa_k = (toa_i + toa_j) / 2.0 - toa_k
+
+                if ITER==0:
+                    init_dtoa_i = np.concatenate([init_dtoa_i, dtoa_i])
+                    init_tot_i = np.concatenate([init_tot_i, tot_i])
+                if ITER==(iterations-1):
+                    final_dtoa_i = np.concatenate([final_dtoa_i, dtoa_i])
+                    final_tot_i = np.concatenate([final_tot_i, tot_i])
+
+                # Plot delta TOA distributions
+                if doIterPlotting:
+                    fig, ax = plt.subplots(1, 1, figsize=(10, 8))
+                    bins = 50
+                    ax.hist(dtoa_i, bins=bins, histtype='step', linewidth=2, label=r'$\Delta TOA_{i}$')
+                    ax.hist(dtoa_j, bins=bins, histtype='step', linewidth=2, label=r'$\Delta TOA_{j}$')
+                    ax.hist(dtoa_k, bins=bins, histtype='step', linewidth=2, label=r'$\Delta TOA_{k}$')
+                    ax.set_xlabel(r"$\Delta TOA$")
+                    ax.set_ylabel("Counts")
+                    ax.set_title(r"$\Delta TOA$ Distribution - All Layers")
+                    ax.legend()
+                    fig.savefig(os.path.join(output_dirs['iterations'][ITER], 'layers_dTOA_histograms.png'), dpi=150)
+                    plt.close(fig)
+
+                tot_i_forfit  = tot_i
+                dtoa_i_forfit = dtoa_i
+                toa_i_forfit  = toa_i
+                tot_j_forfit  = tot_j
+                dtoa_j_forfit = dtoa_j
+                toa_j_forfit  = toa_j
+                tot_k_forfit  = tot_k
+                dtoa_k_forfit = dtoa_k
+                toa_k_forfit  = toa_k
+
+                tot_data = [tot_i, tot_j, tot_k]
+                dtoa_data = [dtoa_i, dtoa_j, dtoa_k]
+
+                if twFitType == 'twc':
+                    if standard_twc_fits is None:
+                        # Same tools as twc.py's three_board_iterative_timewalk_correction:
+                        # np.polyfit + np.poly1d.
+                        tw_corrected_i = np.polyfit(tot_i_forfit.to_list(), dtoa_i_forfit.to_list(), 2)
+                        tw_corrected_j = np.polyfit(tot_j_forfit.to_list(), dtoa_j_forfit.to_list(), 2)
+                        tw_corrected_k = np.polyfit(tot_k_forfit.to_list(), dtoa_k_forfit.to_list(), 2)
+                    else:
+                        try:
+                            tw_corrected_i = np.asarray(standard_twc_fits[(layer_i, ITER)], dtype=float)
+                            tw_corrected_j = np.asarray(standard_twc_fits[(layer_j, ITER)], dtype=float)
+                            tw_corrected_k = np.asarray(standard_twc_fits[(layer_k, ITER)], dtype=float)
+                        except KeyError as exc:
+                            raise RuntimeError(
+                                f'Missing standardized TWC fit for layer/iteration {exc.args[0]}'
+                            ) from exc
+
+                    # Store one fit per target pixel and iteration, using its
+                    # highest-statistics pixel triplet (the first combination).
+                    if c == 0:
+                        for layer, row, col, coefficients in [
+                            (layer_i, sel_row_i, sel_col_i, tw_corrected_i),
+                            (layer_j, sel_row_j, sel_col_j, tw_corrected_j),
+                            (layer_k, sel_row_k, sel_col_k, tw_corrected_k),
+                        ]:
+                            fit_parameter_records.append({
+                                "layer": int(layer), "row": int(row), "col": int(col),
+                                "iteration": int(ITER), "n": int(len(sel_events_i)),
+                                "a": float(coefficients[0]),
+                                "b": float(coefficients[1]),
+                                "c": float(coefficients[2]),
+                                "fit_source": ("standardized" if standard_twc_fits is not None
+                                            else "standard_reference" if is_standard_reference
+                                            else "pixel"),
+                            })
+
+                    # Plot fits
+                    plot_correction_fit(dtoa_data, tot_data, [tw_corrected_i, tw_corrected_j, tw_corrected_k], os.path.join(output_dirs['iterations'][ITER], 'fits_deltaTOA_TOT.png'), useTWC=True)
+
+                    # Apply corrections to all events
+                    toa_i = toa_i + np.poly1d(tw_corrected_i)(np.asarray(tot_i))
+                    toa_j = toa_j + np.poly1d(tw_corrected_j)(np.asarray(tot_j))
+                    toa_k = toa_k + np.poly1d(tw_corrected_k)(np.asarray(tot_k))
+                else:
+                    # Fit linear corrections to TOT vs dTOA
+                    tw_corrected_i = curve_fit(func_lineal, tot_i_forfit.to_list(), dtoa_i_forfit.to_list())[0]
+                    tw_corrected_j = curve_fit(func_lineal, tot_j_forfit.to_list(), dtoa_j_forfit.to_list())[0]
+                    tw_corrected_k = curve_fit(func_lineal, tot_k_forfit.to_list(), dtoa_k_forfit.to_list())[0]
+
+                    # Plot fits
+                    plot_correction_fit(dtoa_data, tot_data, [tw_corrected_i, tw_corrected_j, tw_corrected_k], os.path.join(output_dirs['iterations'][ITER], 'fits_deltaTOA_TOT.png'), useCubic=False)
+
+                    # Apply corrections to all events
+                    toa_i = toa_i + func_lineal(np.asarray(tot_i), *tw_corrected_i)
+                    toa_j = toa_j + func_lineal(np.asarray(tot_j), *tw_corrected_j)
+                    toa_k = toa_k + func_lineal(np.asarray(tot_k), *tw_corrected_k)
+
+                # Plot corrected TOA distributions
+                if doIterPlotting:
+                    fig, ax = plt.subplots(1, 1, figsize=(10, 8))
+                    ax.hist(toa_i, bins=50, histtype='step', linewidth=2, label=r'$TOA_{i}^{corr}$')
+                    ax.hist(toa_j, bins=50, histtype='step', linewidth=2, label=r'$TOA_{j}^{corr}$')
+                    ax.hist(toa_k, bins=50, histtype='step', linewidth=2, label=r'$TOA_{k}^{corr}$')
+                    ax.set_xlabel(r"Corrected $TOA$")
+                    ax.set_ylabel("Counts")
+                    ax.set_title(r"Corrected $TOA$ Distribution - All Layers")
+                    ax.legend()
+                    fig.savefig(os.path.join(output_dirs['iterations'][ITER], 'distribution_TOA_corr.png'), dpi=150)
+                    plt.close(fig)
+
+                # Calculate dT differences
+                T_ij = toa_i - toa_j
+                T_jk = toa_j - toa_k
+                T_ki = toa_k - toa_i
+
+                # Fit dT
+                x_fit, fit_y = fit_deltaT(T_ij, T_jk, T_ki, fitType="GaussianMixture", outDir=os.path.join(output_dirs['iterations'][ITER]), suffix=f"_{sel_row_i}-{sel_col_i}_{sel_row_j}-{sel_col_j}_{sel_row_k}-{sel_col_k}", plot=doIterPlotting)
+
+            # End of iterations -> save files
+            with uproot.recreate(os.path.join(output_base_dir + '/step1/', f'corrected_deltaT_{sel_row_i:02d}{sel_col_i:02d}_{sel_row_j:02d}{sel_col_j:02d}_{sel_row_k:02d}{sel_col_k:02d}.root')) as f:
+                f["tracks"] = {
+                    "Tij": T_ij,
+                    "Tjk": T_jk,
+                    "Tki": T_ki,
+                    "Tij_raw": T_ij_raw,
+                    "Tjk_raw": T_jk_raw,
+                    "Tki_raw": T_ki_raw
+                }
     else:
-        final_combinations = combinations[:1]
+        # Initial dtoa's and tot's
+        init_dtoa_i  = np.array([])
+        init_tot_i   = np.array([])
+        final_dtoa_i = np.array([])
+        final_tot_i  = np.array([])
 
-    print(f"Found {len(combinations)} valid combinations")
-    if not useBest:
-        print(f"Final combinations to try: {len(final_combinations)}")
-        for c in range(0, len(final_combinations)):
-            print(final_combinations[c], rates[c])
-        print(f"Top combination: {combinations[0]} with {rates[0]} events")
-    else:
-        final_combinations = final_combinations[:1]
-        print(f"Only using one combination: {combinations[0]} with {rates[0]} events")
+        # Full corrected dT's
+        full_corr_Tij = np.array([])
+        full_corr_Tjk = np.array([])
+        full_corr_Tki = np.array([])
 
-    # Loop over pixels:
-    for c in tqdm(range(0, len(final_combinations)), desc="Pixel combinations"):
+        # Full corrected dT's
+        full_tot_i      = np.array([])
+        full_tot_code_i = np.array([])
+        full_toa_i      = np.array([])
+        full_toa_code_i = np.array([])
 
-        # Select final pixel combination (highest rate)
-        sel_row_i, sel_col_i = combinations[c][0]
-        sel_row_j, sel_col_j = combinations[c][1]
-        sel_row_k, sel_col_k = combinations[c][2]
-
-        MASK_SEL = ak.flatten((maski_events_i.row==sel_row_i) & (maski_events_i.col==sel_col_i) &
-                              (maski_events_j.row==sel_row_j) & (maski_events_j.col==sel_col_j) &
-                              (maski_events_k.row==sel_row_k) & (maski_events_k.col==sel_col_k))
-
-        sel_events_i = maski_events_i[MASK_SEL]
-        sel_events_j = maski_events_j[MASK_SEL]
-        sel_events_k = maski_events_k[MASK_SEL]
-
-        # Calculate TOA and TOT values
-        toa_code_i = ak.flatten(sel_events_i.toa_code)
-        toa_code_j = ak.flatten(sel_events_j.toa_code)
-        toa_code_k = ak.flatten(sel_events_k.toa_code)
-
-        tot_code_i = ak.flatten(sel_events_i.tot_code)
-        tot_code_j = ak.flatten(sel_events_j.tot_code)
-        tot_code_k = ak.flatten(sel_events_k.tot_code)
-
-        cal_code_i = ak.flatten(sel_events_i.cal_code)
-        cal_code_j = ak.flatten(sel_events_j.cal_code)
-        cal_code_k = ak.flatten(sel_events_k.cal_code)
-
-        # Calculate TOA and TOT
-        toa_i = 12.5 - 3.125 / cal_code_i * toa_code_i
-        toa_j = 12.5 - 3.125 / cal_code_j * toa_code_j
-        toa_k = 12.5 - 3.125 / cal_code_k * toa_code_k
-
-        tot_i = ((2*tot_code_i - np.floor(tot_code_i/32))*3.125 / cal_code_i)
-        tot_j = ((2*tot_code_j - np.floor(tot_code_j/32))*3.125 / cal_code_j)
-        tot_k = ((2*tot_code_k - np.floor(tot_code_k/32))*3.125 / cal_code_k)
+        toa_i = np.array([])
+        toa_j = np.array([])
+        toa_k = np.array([])
+        
+        tot_i = np.array([])
+        tot_j = np.array([])
+        tot_k = np.array([])
 
         # dT differences before any TWC correction is applied
-        T_ij_raw = toa_i - toa_j
-        T_jk_raw = toa_j - toa_k
-        T_ki_raw = toa_k - toa_i
+        T_ij_raw = np.array([])
+        T_jk_raw = np.array([])
+        T_ki_raw = np.array([])
 
-        # Bootstrap iterations
-        #for ITER in range(0, iterations):
-        for ITER in tqdm(range(iterations), desc=f"Iterations for combination {final_combinations[c]}", leave=False):
+        # Get all (j, k) pixel pairs from events that passed through layer i
+        # This is symmetric - order of j and k doesn't matter
+        pixels_j = ak.flatten(maski_events_j.row), ak.flatten(maski_events_j.col)
+        pixels_k = ak.flatten(maski_events_k.row), ak.flatten(maski_events_k.col)
+
+        
+        for r, c in zip(row_i, col_i):
+            # Find combinations for layers j and k (symmetric approach)
+            combinations = []
+            rates = []
+            rc_idx = (maski_events_i.row == r) & (maski_events_i.col == c)
+            pixels_j = ak.flatten(maski_events_j.row[rc_idx]), ak.flatten(maski_events_j.col[rc_idx])
+            pixels_k = ak.flatten(maski_events_k.row[rc_idx]), ak.flatten(maski_events_k.col[rc_idx])
+
+            # Create triplets (row_i, col_i, row_j, col_j, row_k, col_k) for each event
+            triplets = list(zip(pixels_j[0], pixels_j[1], pixels_k[0], pixels_k[1]))
+
+            # Count unique (j, k) combinations
+            unique_triplets, triplet_rates = np.unique(triplets, axis=0, return_counts=True)
+
+            # Filter combinations with at least 3 events
+            valid_mask = triplet_rates >= 3
+            unique_triplets = unique_triplets[valid_mask]
+            triplet_rates = triplet_rates[valid_mask]
+
+            # Sort by rate (descending)
+            sort_idx = np.argsort(triplet_rates)[::-1]
+            unique_triplets = unique_triplets[sort_idx]
+            triplet_rates = triplet_rates[sort_idx]
+
+            # Build combinations list
+            for triplet, rate in zip(unique_triplets, triplet_rates):
+                row_j, col_j, row_k, col_k = triplet
+                combinations.append([[r, c], [row_j, col_j], [row_k, col_k]])
+                rates.append(rate)
+
+            fit_parameter_records = []
+
+            if len(combinations) == 0:
+                print(f"WARNING: No valid combinations found for pixel row={row_i}, col={col_i}")
+                continue
+
+            # Select the pixels
+            doCombination = True
+            final_combinations = []
+            if doCombination:
+                for c,comb in enumerate(combinations):
+                    if rates[c] > 200:
+                        final_combinations.append(comb)
+            else:
+                final_combinations = combinations[:1]
+
+            print(f"Found {len(combinations)} valid combinations")
+            if not useBest:
+                if args.standardize_twc > 0:
+                    raise ValueError('I thought I told you not to do this.')
+                print(f"Final combinations to try: {len(final_combinations)}")
+                for c in range(0, len(final_combinations)):
+                    print(final_combinations[c], rates[c])
+                print(f"Top combination: {combinations[0]} with {rates[0]} events")
+            else:
+                final_combinations = final_combinations[:1]
+                print(f"Only using one combination: {combinations[0]} with {rates[0]} events")
+
+            # Select final pixel combination (highest rate)
+            sel_row_i, sel_col_i = combinations[0][0]
+            sel_row_j, sel_col_j = combinations[0][1]
+            sel_row_k, sel_col_k = combinations[0][2]
+
+            MASK_SEL = ak.flatten((maski_events_i.row==sel_row_i) & (maski_events_i.col==sel_col_i) &
+                                (maski_events_j.row==sel_row_j) & (maski_events_j.col==sel_col_j) &
+                                (maski_events_k.row==sel_row_k) & (maski_events_k.col==sel_col_k))
+
+            sel_events_i = maski_events_i[MASK_SEL]
+            sel_events_j = maski_events_j[MASK_SEL]
+            sel_events_k = maski_events_k[MASK_SEL]
+
+            # Calculate TOA and TOT values
+            toa_code_i = ak.flatten(sel_events_i.toa_code)
+            toa_code_j = ak.flatten(sel_events_j.toa_code)
+            toa_code_k = ak.flatten(sel_events_k.toa_code)
+
+            tot_code_i = ak.flatten(sel_events_i.tot_code)
+            tot_code_j = ak.flatten(sel_events_j.tot_code)
+            tot_code_k = ak.flatten(sel_events_k.tot_code)
+
+            cal_code_i = ak.flatten(sel_events_i.cal_code)
+            cal_code_j = ak.flatten(sel_events_j.cal_code)
+            cal_code_k = ak.flatten(sel_events_k.cal_code)
+
+            # Calculate TOA and TOT
+            temp_toa_i = 12.5 - 3.125 / cal_code_i * toa_code_i
+            temp_toa_j = 12.5 - 3.125 / cal_code_j * toa_code_j
+            temp_toa_k = 12.5 - 3.125 / cal_code_k * toa_code_k
+
+            temp_tot_i = ((2*tot_code_i - np.floor(tot_code_i/32))*3.125 / cal_code_i)
+            temp_tot_j = ((2*tot_code_j - np.floor(tot_code_j/32))*3.125 / cal_code_j)
+            temp_tot_k = ((2*tot_code_k - np.floor(tot_code_k/32))*3.125 / cal_code_k)
+
+            toa_i = np.concatenate([temp_toa_i, toa_i])
+            toa_j = np.concatenate([temp_toa_j, toa_j])
+            toa_k = np.concatenate([temp_toa_k, toa_k])
+
+            tot_i = np.concatenate([temp_tot_i, tot_i])
+            tot_j = np.concatenate([temp_tot_j, tot_j])
+            tot_k = np.concatenate([temp_tot_k, tot_k])
+
+            # dT differences before any TWC correction is applied
+            T_ij_raw = np.concatenate([temp_toa_i - temp_toa_j, T_ij_raw])
+            T_jk_raw = np.concatenate([temp_toa_j - temp_toa_k, T_jk_raw])
+            T_ki_raw = np.concatenate([temp_toa_k - temp_toa_i, T_ki_raw])
+
+        print('iterations', iterations)
+        for ITER in tqdm(range(iterations), desc=f"Iterations for first combination only"): #, leave=False):
+            c = 0
 
             # Calculate delta TOA for each layer
             dtoa_i = (toa_j + toa_k) / 2.0 - toa_i
@@ -1225,8 +1524,8 @@ def run_bootstrap_analysis(row_i, col_i, presel_events_i, presel_events_j, prese
                             "b": float(coefficients[1]),
                             "c": float(coefficients[2]),
                             "fit_source": ("standardized" if standard_twc_fits is not None
-                                           else "standard_reference" if is_standard_reference
-                                           else "pixel"),
+                                        else "standard_reference" if is_standard_reference
+                                        else "pixel"),
                         })
 
                 # Plot fits
@@ -1282,6 +1581,7 @@ def run_bootstrap_analysis(row_i, col_i, presel_events_i, presel_events_j, prese
                 "Tki_raw": T_ki_raw
             }
 
+    print('fit_parameter_records', fit_parameter_records)
     return fit_parameter_records
 
 
@@ -1331,7 +1631,7 @@ if __name__ == "__main__":
                    help='Upper physical-TOT bound in ns for TOA-correction RMS maps (default: 12.5)')
     parser.add_argument('--twc-rms-tot-points', type=int, default=251,
                    help='Number of uniformly spaced TOT points used by TOA-correction RMS maps (default: 251)')
-    parser.add_argument('--standardize-twc', action='store_true',
+    parser.add_argument('--standardize-twc', action='store', type = int, default=-1,
                    help=('Fit the most populated layer-i pixel once, then apply its per-layer '
                          'TWC fits to every pixel for the same number of iterations'))
     parser.add_argument('--doGlobal', action='store_true',
@@ -1345,6 +1645,13 @@ if __name__ == "__main__":
 
     if args.standardize_twc and args.tw_fit_type != 'twc':
         parser.error('--standardize-twc requires --tw-fit-type twc')
+
+    if args.standardize_twc == 0:
+        parser.error('We are zero-indexing, so this choses no pixels to standarize against.')  
+    
+    if args.standardize_twc > 0 and args.use_best == 0:
+        parser.error('args.standardize_twc > 0 and args.use_best == 0 happend. Dont do this. This breaks things.')
+
 
     # Validate that i, j, k are all different
     if len(set([args.layer_i, args.layer_j, args.layer_k])) != 3:
@@ -1738,35 +2045,24 @@ if __name__ == "__main__":
     limit = DOLIMIT
     ilimit = 0
     fit_parameter_records = []
+
     standard_twc_fits = None
-    standard_reference_pixel = tuple(map(int, high_rate_pixels[0])) if len(high_rate_pixels) else None
+    standard_reference_pixel = [tuple(map(int, high_rate_pixels[i])) for i in range(args.standardize_twc)] if len(high_rate_pixels) else None
 
-    for pixel_id, (pixel, count) in enumerate(zip(high_rate_pixels, high_rate_counts)):
-        if ilimit > limit and DOLIMIT:
-            break
-        ilimit +=1
-
-        row_i, col_i = pixel
-        is_standard_reference = args.standardize_twc and pixel_id == 0
-
-        # The highest-population pixel must always be processed first in
-        # standardized mode, even when a row/column selection requests only
-        # another target pixel.
-        if args.row_i > 0 and not is_standard_reference:
-            if not (args.row_i==row_i):
-                continue
-        if args.col_i > 0 and not is_standard_reference:
-            if not (args.col_i==col_i):
-                continue
-
+    if args.standardize_twc > 0:
+        row_i_fitter, col_i_fitter, pid_fitter = [], [], []
+        for pixel_id, (pixel, count) in enumerate(zip(high_rate_pixels[:args.standardize_twc], high_rate_counts[:args.standardize_twc])):
+            row_i_fitter.append(pixel[0])
+            col_i_fitter.append(pixel[1])
+            pid_fitter.append(pixel_id)
         pixel_fit_parameters = run_bootstrap_analysis(
-            row_i=row_i,
-            col_i=col_i,
+            row_i=row_i_fitter,
+            col_i=col_i_fitter,
             presel_events_i=presel_events_i,
             presel_events_j=presel_events_j,
             presel_events_k=presel_events_k,
             output_base_dir=BASE_OUTPUT_DIR,
-            pixel_id=pixel_id,
+            pixel_id=pid_fitter,
             layer_i=LAYER_I,
             layer_j=LAYER_J,
             layer_k=LAYER_K,
@@ -1775,33 +2071,66 @@ if __name__ == "__main__":
             useBest=USEBEST,
             doIterPlotting=True,
             twFitType=args.tw_fit_type,
-            standard_twc_fits=(None if is_standard_reference else standard_twc_fits),
-            is_standard_reference=is_standard_reference,
+            standard_twc_fits=None,
+            is_standard_reference=True,
+        )
+        if not pixel_fit_parameters:
+            raise RuntimeError(
+                f'Could not fit the standardized-TWC reference pixel(s) {standard_reference_pixel}'
+            )
+        standard_twc_fits = {
+            (int(record['layer']), int(record['iteration'])):
+                np.array([record['a'], record['b'], record['c']], dtype=float)
+            for record in pixel_fit_parameters
+        }
+        expected_keys = {
+            (layer, iteration)
+            for layer in [LAYER_I, LAYER_J, LAYER_K]
+            for iteration in range(ITERATIONS)
+        }
+        missing_keys = expected_keys.difference(standard_twc_fits)
+        if missing_keys:
+            raise RuntimeError(
+                f'Standardized-TWC reference is missing fits for: {sorted(missing_keys)}'
+            )
+        print(f'Using highest-population pixel(s) {standard_reference_pixel} as the '
+                'standardized TWC reference for all remaining pixels')
+
+    for pixel_id, (pixel, count) in enumerate(zip(high_rate_pixels, high_rate_counts)):
+        if ilimit > limit and DOLIMIT:
+            break
+        ilimit +=1
+
+        row_i, col_i = pixel
+
+        # The highest-population pixel must always be processed first in
+        # standardized mode, even when a row/column selection requests only
+        # another target pixel.
+        if args.row_i > 0 and not (args.row_i==row_i):
+                continue
+        if args.col_i > 0 and not (args.col_i==col_i):
+                continue
+
+        pixel_fit_parameters = run_bootstrap_analysis(
+            row_i=int(row_i),
+            col_i=int(col_i),
+            presel_events_i=presel_events_i,
+            presel_events_j=presel_events_j,
+            presel_events_k=presel_events_k,
+            output_base_dir=BASE_OUTPUT_DIR,
+            pixel_id=int(pixel_id),
+            layer_i=LAYER_I,
+            layer_j=LAYER_J,
+            layer_k=LAYER_K,
+            iterations=ITERATIONS,
+            doFWMH=True,
+            useBest=USEBEST,
+            doIterPlotting=True,
+            twFitType=args.tw_fit_type,
+            standard_twc_fits=(standard_twc_fits if (args.standardize_twc > 0) else None),
+            is_standard_reference=False,
         )
         fit_parameter_records.extend(pixel_fit_parameters)
-
-        if is_standard_reference:
-            if not pixel_fit_parameters:
-                raise RuntimeError(
-                    f'Could not fit the standardized-TWC reference pixel {standard_reference_pixel}'
-                )
-            standard_twc_fits = {
-                (int(record['layer']), int(record['iteration'])):
-                    np.array([record['a'], record['b'], record['c']], dtype=float)
-                for record in pixel_fit_parameters
-            }
-            expected_keys = {
-                (layer, iteration)
-                for layer in [LAYER_I, LAYER_J, LAYER_K]
-                for iteration in range(ITERATIONS)
-            }
-            missing_keys = expected_keys.difference(standard_twc_fits)
-            if missing_keys:
-                raise RuntimeError(
-                    f'Standardized-TWC reference is missing fits for: {sorted(missing_keys)}'
-                )
-            print(f'Using highest-population pixel {standard_reference_pixel} as the '
-                  'standardized TWC reference for all remaining pixels')
 
     if fit_parameter_records:
         # A reference-layer pixel may occur in several target-pixel triplets.
@@ -1816,7 +2145,7 @@ if __name__ == "__main__":
         with open(os.path.join(output_dirs['twc'], 'twc_fit_parameters.json'), 'w') as f:
             json.dump(fit_parameter_records, f, indent=2)
 
-        if args.standardize_twc:
+        if False: #args.standardize_twc:
             with open(os.path.join(output_dirs['twc'], 'standardized_twc.json'), 'w') as f:
                 json.dump({
                     'enabled': True,
