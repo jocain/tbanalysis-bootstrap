@@ -699,6 +699,7 @@ if __name__ == "__main__":
     # ========================================================================
 
     config          = run_log['config']
+    run_info        = run_log['runs']
     service_hybrids = config['telescope_config']['service_hybrids']
     rb_info         = {sh['rb']: sh for sh in service_hybrids}
     temperature     = config.get('temperature', config.get('run_config', {}).get('temperature', None))
@@ -707,7 +708,7 @@ if __name__ == "__main__":
         sh = rb_info[rb]
         return {
             'name':          sh['modules'][0]['name'],
-            'bias_voltage':  sh['bias_voltage'],
+            'bias_voltage':  np.mean([single_run_info[f"module_{sh['modules'][0]['id']}_bias_voltage"] for single_run_info in run_info]), # sh['bias_voltage'],
             'mean_sigma_ps': round(float(mean), 2) if not np.isnan(mean) else None,
             'std_sigma_ps':  round(float(std),  2) if not np.isnan(std)  else None,
         }
